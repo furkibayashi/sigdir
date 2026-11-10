@@ -1,0 +1,153 @@
+[
+  {
+    "id": "osym-vesikalik",
+    "kind": "image",
+    "name": {
+      "tr": "ÖSYM / e-Devlet vesikalık",
+      "en": "ÖSYM / e-Devlet ID photo"
+    },
+    "note": {
+      "tr": "50×60 mm oran, beyaz/açık arka plan önerilir. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "50×60 mm ratio, plain light background recommended. Check the limits in the official guidelines."
+    },
+    "format": "jpg",
+    "maxBytes": 200000,
+    "width": 394,
+    "height": 472,
+    "aspect": 0.8333333333333334
+  },
+  {
+    "id": "biyometrik",
+    "kind": "image",
+    "name": {
+      "tr": "Biyometrik / pasaport fotoğrafı",
+      "en": "Biometric / passport photo"
+    },
+    "note": {
+      "tr": "50×60 mm oran. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "50×60 mm ratio. Check the limits in the official guidelines."
+    },
+    "format": "jpg",
+    "maxBytes": 500000,
+    "width": 591,
+    "height": 709,
+    "aspect": 0.8333333333333334
+  },
+  {
+    "id": "edevlet-belge-jpg",
+    "kind": "image",
+    "name": {
+      "tr": "e-Devlet belge yükleme (JPG)",
+      "en": "e-Devlet document upload (JPG)"
+    },
+    "note": {
+      "tr": "Genel belge yükleme sınırı. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "General document upload limit. Check the limits in the official guidelines."
+    },
+    "format": "jpg",
+    "maxBytes": 2000000,
+    "longEdge": 2480
+  },
+  {
+    "id": "edevlet-belge-pdf",
+    "kind": "pdf",
+    "name": {
+      "tr": "e-Devlet belge yükleme (PDF)",
+      "en": "e-Devlet document upload (PDF)"
+    },
+    "note": {
+      "tr": "Genel belge yükleme sınırı. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "General document upload limit. Check the limits in the official guidelines."
+    },
+    "format": "pdf",
+    "maxBytes": 2000000
+  },
+  {
+    "id": "cv-foto",
+    "kind": "image",
+    "name": {
+      "tr": "CV / iş başvurusu fotoğrafı",
+      "en": "CV / job application photo"
+    },
+    "note": {
+      "tr": "Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "Check the limits in the official guidelines."
+    },
+    "format": "jpg",
+    "maxBytes": 1000000,
+    "longEdge": 1600
+  },
+  {
+    "id": "eposta",
+    "kind": "image",
+    "name": {
+      "tr": "E-posta eki (küçült)",
+      "en": "Email attachment (shrink)"
+    },
+    "note": {
+      "tr": "Uzun kenar 1920 piksele indirilir. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "Long edge is reduced to 1920 pixels. Check the limits in the official guidelines."
+    },
+    "format": "jpg",
+    "maxBytes": 1000000,
+    "longEdge": 1920
+  },
+  {
+    "id": "discord-video",
+    "kind": "video",
+    "name": {
+      "tr": "Discord video (10 MB)",
+      "en": "Discord video (10 MB)"
+    },
+    "note": {
+      "tr": "Ücretsiz hesap yükleme sınırı. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "Free account upload limit. Check the limits in the official guidelines."
+    },
+    "format": "mp4",
+    "maxBytes": 10000000
+  },
+  {
+    "id": "whatsapp-video",
+    "kind": "video",
+    "name": {
+      "tr": "WhatsApp video (64 MB)",
+      "en": "WhatsApp video (64 MB)"
+    },
+    "note": {
+      "tr": "Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "Check the limits in the official guidelines."
+    },
+    "format": "mp4",
+    "maxBytes": 64000000
+  },
+  {
+    "id": "whatsapp-video-16",
+    "kind": "video",
+    "name": {
+      "tr": "WhatsApp video (16 MB, genel paylaşım)",
+      "en": "WhatsApp video (16 MB, broad sharing)"
+    },
+    "note": {
+      "tr": "Eski sürümler ve durum paylaşımı için daha güvenli. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "Safer for older versions and status updates. Check the limits in the official guidelines."
+    },
+    "format": "mp4",
+    "maxBytes": 16000000
+  },
+  {
+    "id": "shorts-dikey",
+    "kind": "video",
+    "name": {
+      "tr": "Shorts / TikTok dikey (9:16)",
+      "en": "Shorts / TikTok vertical (9:16)"
+    },
+    "note": {
+      "tr": "Görüntü ortadan 9:16 kırpılır. Sınırları başvuru kılavuzundan kontrol edin.",
+      "en": "The picture is center-cropped to 9:16. Check the limits in the official guidelines."
+    },
+    "format": "mp4",
+    "maxBytes": 50000000,
+    "aspect": 0.5625,
+    "vertical": true
+  }
+]

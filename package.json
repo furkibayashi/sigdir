@@ -1,0 +1,30 @@
+{
+  "name": "sigdir",
+  "productName": "Sığdır",
+  "version": "0.1.0",
+  "description": "Fotoğraf, belge ve videoları internete yüklemeden hedef boyut/format/ölçüye sığdıran çevrimdışı masaüstü uygulaması.",
+  "main": "main.js",
+  "license": "MIT",
+  "author": "Sığdır",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/unit",
+    "test:e2e": "playwright test tests/e2e",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "heic-decode": "^2.1.0",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^26.18.0"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0"
+  }
+}
