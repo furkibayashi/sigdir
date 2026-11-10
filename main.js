@@ -11,6 +11,9 @@ if (process.platform === 'linux' && process.getuid && process.getuid() === 0) {
   app.commandLine.appendSwitch('no-sandbox');
 }
 
+// Testler için ayar klasörünü yalıtma (ör. SIGDIR_USER_DATA=/tmp/x)
+if (process.env.SIGDIR_USER_DATA) app.setPath('userData', process.env.SIGDIR_USER_DATA);
+
 // Windows bildirim/görev çubuğu kimliği
 if (process.platform === 'win32') app.setAppUserModelId('com.sigdir.app');
 

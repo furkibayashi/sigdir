@@ -8,7 +8,7 @@
   "author": "Sığdır",
   "private": true,
   "scripts": {
-    "start": "electron .",
+    "start": "node src/main/launch.js",
     "test": "node --test \"tests/unit/**/*.test.js\"",
     "test:e2e": "playwright test tests/e2e",
     "dist": "electron-builder --win portable"

@@ -14,6 +14,7 @@
     "maxBytes": 200000,
     "width": 394,
     "height": 472,
+    "sizeLabel": "50×60 mm",
     "aspect": 0.8333333333333334
   },
   {
@@ -31,6 +32,7 @@
     "maxBytes": 500000,
     "width": 591,
     "height": 709,
+    "sizeLabel": "50×60 mm",
     "aspect": 0.8333333333333334
   },
   {

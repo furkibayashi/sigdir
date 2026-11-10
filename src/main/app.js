@@ -63,7 +63,7 @@ function focusWindow() {
 
 function backgroundFor(theme) {
   const dark = theme === 'dark' || (theme === 'system' && nativeTheme.shouldUseDarkColors);
-  return dark ? '#16181d' : '#f6f7f9';
+  return dark ? '#121117' : '#F3F1EC'; // arayüz tema zeminleriyle aynı (açılışta yanıp sönmesin)
 }
 
 function createWindow() {
@@ -71,10 +71,10 @@ function createWindow() {
   nativeTheme.themeSource = s.theme;
   const iconPath = path.join(ROOT, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
   win = new BrowserWindow({
-    width: 1120,
-    height: 780,
-    minWidth: 820,
-    minHeight: 580,
+    width: 1000,
+    height: 700,
+    minWidth: 760,
+    minHeight: 560,
     title: 'Sığdır',
     show: false,
     backgroundColor: backgroundFor(s.theme),
