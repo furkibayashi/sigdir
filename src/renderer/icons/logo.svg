@@ -17,7 +17,7 @@
     <path d="M208 164v22a22 22 0 0 1-22 22h-22"/>
     <path d="M92 208H70a22 22 0 0 1-22-22v-22"/>
   </g>
-  <path d="M98 76h42l30 30v66a8 8 0 0 1-8 8H98a8 8 0 0 1-8-8V84a8 8 0 0 1 8-8z" fill="url(#pg)"/>
-  <path d="M140 76v22a8 8 0 0 0 8 8h22z" fill="#C98F3E"/>
-  <path d="M106 136h48M106 154h32" stroke="#4127A8" stroke-opacity=".55" stroke-width="9" stroke-linecap="round"/>
+  <path d="M92 70h46l34 34v74a10 10 0 0 1-10 10H92a10 10 0 0 1-10-10V80a10 10 0 0 1 10-10z" fill="url(#pg)"/>
+  <path d="M138 70v24a10 10 0 0 0 10 10h24z" fill="#C98F3E"/>
+  <path d="M100 136h54M100 158h34" stroke="#4127A8" stroke-opacity=".55" stroke-width="10" stroke-linecap="round"/>
 </svg>
