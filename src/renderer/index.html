@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Sığdır</title>
+  <link rel="icon" href="icons/logo.svg">
+  <link rel="stylesheet" href="styles.css">
+  <script src="i18n.js" defer></script>
+  <script src="mock-api.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <!-- İkon kümesi (24×24, çizgi) -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 15.5l-4.8-4.8L7 20"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2.5V16a2 2 0 0 0 2 2h13.5M2.5 6H16a2 2 0 0 1 2 2v13.5"/></symbol>
+    <symbol id="i-rot-l" viewBox="0 0 24 24"><path d="M4 4.5V9h4.5"/><path d="M4.7 9A8 8 0 1 1 4 13"/></symbol>
+    <symbol id="i-rot-r" viewBox="0 0 24 24"><path d="M20 4.5V9h-4.5"/><path d="M19.3 9A8 8 0 1 0 20 13"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.01"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><path d="M9 6v.01M15 6v.01M9 12v.01M15 12v.01M9 18v.01M15 18v.01" stroke-width="3"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
+    <symbol id="i-merge" viewBox="0 0 24 24"><path d="M6 3v4c0 4 6 5 6 9v5M18 3v4c0 4-6 5-6 9"/><path d="M9 18l3 3 3-3"/></symbol>
+    <symbol id="i-split" viewBox="0 0 24 24"><path d="M12 3v5c0 4-6 5-6 9v4M12 8c0 4 6 5 6 9v4"/><path d="M9 6l3-3 3 3"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.6-3 7.8-7 9.5-4-1.7-7-4.9-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><rect x="8.5" y="8.5" width="7" height="7" rx="1.5"/></symbol>
+  </svg>
+
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="icons/logo.svg" alt="" width="28" height="28">
+        <span class="brand-name">Sığdır</span>
+      </div>
+
+      <div class="tabs" role="tablist" data-i18n-attr="aria-label:tabs.label">
+        <button class="tab" role="tab" id="tab-image" aria-controls="panel-image" aria-selected="true" data-tab="image">
+          <svg class="ic" aria-hidden="true"><use href="#i-image"/></svg><span data-i18n="tabs.image"></span>
+        </button>
+        <button class="tab" role="tab" id="tab-pdf" aria-controls="panel-pdf" aria-selected="false" tabindex="-1" data-tab="pdf">
+          <svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg><span data-i18n="tabs.pdf"></span>
+        </button>
+        <button class="tab" role="tab" id="tab-video" aria-controls="panel-video" aria-selected="false" tabindex="-1" data-tab="video">
+          <svg class="ic" aria-hidden="true"><use href="#i-video"/></svg><span data-i18n="tabs.video"></span>
+          <span class="tab-badge" id="video-badge" hidden><svg class="ic ic-xs" aria-hidden="true"><use href="#i-lock"/></svg><span data-i18n="tabs.videoOff"></span></span>
+        </button>
+      </div>
+
+      <div class="topbar-end">
+        <button class="icon-btn" id="btn-settings" type="button" data-i18n-attr="aria-label:settings.open;title:settings.open" aria-haspopup="dialog">
+          <svg class="ic" aria-hidden="true"><use href="#i-settings"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- ============ GÖRSEL ============ -->
+      <section class="workspace" role="tabpanel" id="panel-image" aria-labelledby="tab-image" data-kind="image">
+        <div class="pane pane-files">
+          <div class="pane-head">
+            <span class="step" aria-hidden="true">1</span>
+            <h2 class="pane-title" id="image-files-title" data-i18n="image.step1"></h2>
+            <div class="pane-actions" data-when="has-files">
+              <button class="btn btn-ghost btn-sm" type="button" data-action="add"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="common.addMore"></span></button>
+              <button class="btn btn-ghost btn-sm" type="button" data-action="clear"><span data-i18n="common.clear"></span></button>
+            </div>
+          </div>
+          <div class="pane-body">
+            <div class="dropzone" data-when="empty" data-dropkind="image"></div>
+            <div class="banner-slot" data-when="has-files"></div>
+            <ul class="file-list" data-when="has-files" aria-labelledby="image-files-title"></ul>
+          </div>
+        </div>
+        <aside class="pane pane-target" aria-labelledby="image-target-title">
+          <div class="pane-head">
+            <span class="step" aria-hidden="true">2</span>
+            <h2 class="pane-title" id="image-target-title" data-i18n="image.step2"></h2>
+          </div>
+          <div class="pane-body">
+            <div class="profiles" role="radiogroup" aria-labelledby="image-target-title"></div>
+          </div>
+          <div class="pane-foot"></div>
+        </aside>
+      </section>
+
+      <!-- ============ PDF ============ -->
+      <section class="workspace" role="tabpanel" id="panel-pdf" aria-labelledby="tab-pdf" data-kind="pdf" hidden>
+        <div class="pane pane-files">
+          <div class="pane-head">
+            <span class="step" aria-hidden="true">1</span>
+            <h2 class="pane-title" id="pdf-files-title" data-i18n="pdf.step1"></h2>
+            <div class="pane-actions" data-when="has-files">
+              <button class="btn btn-ghost btn-sm" type="button" data-action="add"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="common.addMore"></span></button>
+              <button class="btn btn-ghost btn-sm" type="button" data-action="clear"><span data-i18n="common.clear"></span></button>
+            </div>
+          </div>
+          <div class="pane-body">
+            <div class="dropzone" data-when="empty" data-dropkind="pdf"></div>
+            <div class="banner-slot" data-when="has-files"></div>
+            <p class="list-hint" data-when="has-files" id="pdf-order-hint" data-i18n="pdf.orderHint"></p>
+            <ol class="file-list file-list-ordered" data-when="has-files" aria-labelledby="pdf-files-title" aria-describedby="pdf-order-hint"></ol>
+          </div>
+        </div>
+        <aside class="pane pane-target" aria-labelledby="pdf-target-title">
+          <div class="pane-head">
+            <span class="step" aria-hidden="true">2</span>
+            <h2 class="pane-title" id="pdf-target-title" data-i18n="pdf.step2"></h2>
+          </div>
+          <div class="pane-body">
+            <div class="segmented segmented-lg" role="radiogroup" data-i18n-attr="aria-label:pdf.modeLabel" id="pdf-mode">
+              <label><input type="radio" name="pdf-mode" value="merge" checked><span><svg class="ic" aria-hidden="true"><use href="#i-merge"/></svg><span data-i18n="pdf.merge"></span></span></label>
+              <label><input type="radio" name="pdf-mode" value="split"><span><svg class="ic" aria-hidden="true"><use href="#i-split"/></svg><span data-i18n="pdf.split"></span></span></label>
+            </div>
+            <p class="mode-desc" id="pdf-mode-desc"></p>
+            <h3 class="sub-title" id="pdf-size-title" data-when="merge" data-i18n="pdf.sizeTitle"></h3>
+            <div class="profiles" role="radiogroup" aria-labelledby="pdf-size-title" data-when="merge"></div>
+          </div>
+          <div class="pane-foot"></div>
+        </aside>
+      </section>
+
+      <!-- ============ VİDEO ============ -->
+      <section class="workspace" role="tabpanel" id="panel-video" aria-labelledby="tab-video" data-kind="video" hidden>
+        <div class="pane pane-files">
+          <div class="pane-head">
+            <span class="step" aria-hidden="true">1</span>
+            <h2 class="pane-title" id="video-files-title" data-i18n="video.step1"></h2>
+            <div class="pane-actions" data-when="has-files">
+              <button class="btn btn-ghost btn-sm" type="button" data-action="add"><span data-i18n="video.change"></span></button>
+              <button class="btn btn-ghost btn-sm" type="button" data-action="clear"><span data-i18n="common.remove"></span></button>
+            </div>
+          </div>
+          <div class="pane-body">
+            <div class="dropzone" data-when="empty" data-dropkind="video"></div>
+            <div class="banner-slot" data-when="has-files"></div>
+            <div class="video-editor" data-when="has-files"></div>
+          </div>
+        </div>
+        <aside class="pane pane-target" aria-labelledby="video-target-title">
+          <div class="pane-head">
+            <span class="step" aria-hidden="true">2</span>
+            <h2 class="pane-title" id="video-target-title" data-i18n="video.step2"></h2>
+          </div>
+          <div class="pane-body">
+            <div class="profiles" role="radiogroup" aria-labelledby="video-target-title"></div>
+          </div>
+          <div class="pane-foot"></div>
+        </aside>
+        <div class="noffmpeg" id="video-off" hidden></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Sürükleme katmanı -->
+  <div class="drag-overlay" id="drag-overlay" hidden aria-hidden="true">
+    <div class="drag-frame">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="drag-text">
+        <strong data-i18n="drop.overlayTitle"></strong>
+        <span data-i18n="drop.overlaySub"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kırp & döndür -->
+  <dialog class="dialog dialog-crop" id="dlg-crop" aria-labelledby="crop-title" aria-describedby="crop-help">
+    <div class="dialog-head">
+      <div>
+        <h2 id="crop-title" data-i18n="crop.title"></h2>
+        <p class="muted" id="crop-sub"></p>
+      </div>
+      <button class="icon-btn" type="button" data-close data-i18n-attr="aria-label:common.close;title:common.close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="crop-stage-wrap">
+      <div class="crop-stage" id="crop-stage">
+        <canvas id="crop-canvas"></canvas>
+        <div class="crop-box" id="crop-box" tabindex="0" role="group" data-i18n-attr="aria-roledescription:crop.boxRole;aria-label:crop.boxLabel" aria-describedby="crop-help crop-readout">
+          <span class="thirds" aria-hidden="true"></span>
+          <span class="handle nw" data-handle="nw" aria-hidden="true"></span>
+          <span class="handle ne" data-handle="ne" aria-hidden="true"></span>
+          <span class="handle sw" data-handle="sw" aria-hidden="true"></span>
+          <span class="handle se" data-handle="se" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+    <p class="crop-help" id="crop-help" data-i18n="crop.help"></p>
+    <div class="dialog-foot">
+      <div class="btn-row">
+        <button class="btn btn-secondary" type="button" id="crop-rot-l"><svg class="ic" aria-hidden="true"><use href="#i-rot-l"/></svg><span data-i18n="crop.rotLeft"></span></button>
+        <button class="btn btn-secondary" type="button" id="crop-rot-r"><svg class="ic" aria-hidden="true"><use href="#i-rot-r"/></svg><span data-i18n="crop.rotRight"></span></button>
+        <button class="btn btn-ghost" type="button" id="crop-reset" data-i18n="crop.reset"></button>
+      </div>
+      <output class="crop-readout" id="crop-readout" aria-live="polite"></output>
+      <div class="btn-row">
+        <button class="btn btn-secondary" type="button" data-close data-i18n="common.cancel"></button>
+        <button class="btn btn-primary" type="button" id="crop-apply" data-i18n="crop.apply"></button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Ayarlar -->
+  <dialog class="dialog dialog-sheet" id="dlg-settings" aria-labelledby="settings-title">
+    <div class="dialog-head">
+      <h2 id="settings-title" data-i18n="settings.title"></h2>
+      <button class="icon-btn" type="button" data-close data-i18n-attr="aria-label:common.close;title:common.close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="settings-body">
+      <fieldset class="field">
+        <legend data-i18n="settings.lang"></legend>
+        <div class="segmented" id="set-lang">
+          <label><input type="radio" name="set-lang" value="tr"><span>Türkçe</span></label>
+          <label><input type="radio" name="set-lang" value="en"><span>English</span></label>
+        </div>
+      </fieldset>
+      <fieldset class="field">
+        <legend data-i18n="settings.theme"></legend>
+        <div class="segmented" id="set-theme">
+          <label><input type="radio" name="set-theme" value="system"><span data-i18n="settings.themeSystem"></span></label>
+          <label><input type="radio" name="set-theme" value="light"><span data-i18n="settings.themeLight"></span></label>
+          <label><input type="radio" name="set-theme" value="dark"><span data-i18n="settings.themeDark"></span></label>
+        </div>
+      </fieldset>
+      <div class="field">
+        <span class="field-label" id="set-out-label" data-i18n="settings.output"></span>
+        <div class="out-box">
+          <svg class="ic" aria-hidden="true"><use href="#i-folder"/></svg>
+          <span class="out-path" id="set-out-path" aria-labelledby="set-out-label set-out-path"></span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" type="button" id="set-out-pick" data-i18n="settings.outputPick"></button>
+          <button class="btn btn-ghost btn-sm" type="button" id="set-out-reset" data-i18n="settings.outputReset"></button>
+        </div>
+      </div>
+      <label class="switch-row">
+        <span class="switch-text"><span data-i18n="settings.openAfter"></span><small data-i18n="settings.openAfterHint"></small></span>
+        <input type="checkbox" role="switch" class="switch" id="set-open-after">
+      </label>
+      <label class="switch-row" id="set-ctx-row" hidden>
+        <span class="switch-text"><span data-i18n="settings.contextMenu"></span><small data-i18n="settings.contextMenuHint"></small></span>
+        <input type="checkbox" role="switch" class="switch" id="set-ctx">
+      </label>
+      <div class="about">
+        <svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>
+        <p><strong data-i18n="settings.privacyTitle"></strong> <span data-i18n="settings.privacy"></span><br><small class="muted" id="about-version"></small></p>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toasts" id="toasts"></div>
+  <div class="sr-only" id="live-polite" aria-live="polite" aria-atomic="true"></div>
+  <div class="sr-only" id="live-assertive" aria-live="assertive" aria-atomic="true"></div>
+</body>
+</html>

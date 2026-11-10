@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Sığdır: köşe işaretleriyle çerçevelenmiş, kutuya sığan bir dosya -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6C50E6"/>
+      <stop offset="1" stop-color="#4127A8"/>
+    </linearGradient>
+    <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6D08A"/>
+      <stop offset="1" stop-color="#E5AE5C"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="60" fill="url(#bg)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 92V70a22 22 0 0 1 22-22h22"/>
+    <path d="M164 48h22a22 22 0 0 1 22 22v22"/>
+    <path d="M208 164v22a22 22 0 0 1-22 22h-22"/>
+    <path d="M92 208H70a22 22 0 0 1-22-22v-22"/>
+  </g>
+  <path d="M98 76h42l30 30v66a8 8 0 0 1-8 8H98a8 8 0 0 1-8-8V84a8 8 0 0 1 8-8z" fill="url(#pg)"/>
+  <path d="M140 76v22a8 8 0 0 0 8 8h22z" fill="#C98F3E"/>
+  <path d="M106 136h48M106 154h32" stroke="#4127A8" stroke-opacity=".55" stroke-width="9" stroke-linecap="round"/>
+</svg>
