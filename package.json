@@ -9,7 +9,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --test tests/unit",
+    "test": "node --test \"tests/unit/**/*.test.js\"",
     "test:e2e": "playwright test tests/e2e",
     "dist": "electron-builder --win portable"
   },

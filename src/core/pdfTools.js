@@ -2,6 +2,7 @@
 
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
+const sharp = require('sharp');
 const { SigdirError, toErrorInfo } = require('./errors');
 const { sniff, readHead, loadImage } = require('./imageLoad');
 const { desiredOutputPath, writeFileUnique, fileSize, readFileSafe, throwIfAborted } = require('./fileUtils');
@@ -16,7 +17,10 @@ const LEVELS = [
 
 async function loadPdf(bytes) {
   try {
-    return await PDFDocument.load(bytes, { updateMetadata: false });
+    const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+    // Bozuk dosyalar yüklenip sayfa ağacında patlayabilir; burada yakala
+    if (doc.getPageCount() < 1) throw new Error('no pages');
+    return doc;
   } catch (err) {
     if (/encrypt/i.test(err.message)) throw new SigdirError('encrypted');
     throw new SigdirError('read_failed', err.message);
@@ -41,16 +45,26 @@ async function readSource(file) {
 
 async function imageJpeg(src, levelIdx) {
   if (src.cache.has(levelIdx)) return src.cache.get(levelIdx);
+  // Kaynağı bir kez çöz (en fazla ilk kademenin uzun kenarına), sonraki kademeler bu ham veriden üretilir
+  if (!src.raw) {
+    const max = LEVELS[0].edge;
+    const { data, info } = await src.image
+      .make()
+      .resize({ width: max, height: max, fit: 'inside', withoutEnlargement: true })
+      .flatten({ background: '#ffffff' })
+      .toColourspace('srgb')
+      .raw({ depth: 'uchar' })
+      .toBuffer({ resolveWithObject: true });
+    src.raw = { data, raw: { width: info.width, height: info.height, channels: info.channels } };
+  }
   const { edge, q } = LEVELS[levelIdx];
-  const { data, info } = await src.image
-    .make()
+  const { data, info } = await sharp(src.raw.data, { raw: src.raw.raw })
     .resize({ width: edge, height: edge, fit: 'inside', withoutEnlargement: true })
-    .flatten({ background: '#ffffff' })
-    .toColourspace('srgb')
-    .jpeg({ quality: q, mozjpeg: true })
+    .jpeg({ quality: q, optimiseCoding: true, chromaSubsampling: '4:2:0' })
     .toBuffer({ resolveWithObject: true });
   const out = { data, width: info.width, height: info.height };
   src.cache.set(levelIdx, out);
+  if (!src.keepRaw) src.raw = null; // çok sayfalı birleştirmede belleği koru
   return out;
 }
 
@@ -99,6 +113,9 @@ async function mergePdf({ files, output, maxBytes } = {}, opts = {}) {
       sources.push(await readSource(list[i]));
     }
     const hasImages = sources.some((s) => s.kind === 'image');
+    // Çözülmüş ham görüntüyü (sayfa başına ~25 MB) yalnızca az sayıda görselde bellekte tut
+    const keepRaw = sources.filter((s) => s.kind === 'image').length <= 12;
+    sources.forEach((s) => { s.keepRaw = keepRaw; });
     let built = await buildMerged(sources, 0, signal);
     let level = 0;
     if (maxBytes && built.bytes.length > maxBytes) {

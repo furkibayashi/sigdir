@@ -7,7 +7,7 @@ const BUILTIN_PATH = path.join(__dirname, 'profiles.json');
 
 function validProfile(p) {
   return p && typeof p.id === 'string' && ['image', 'pdf', 'video'].includes(p.kind) &&
-    p.name && typeof p.name === 'object' && Number(p.maxBytes) > 0 &&
+    p.name && (typeof p.name === 'string' || typeof p.name === 'object') && Number(p.maxBytes) > 0 &&
     ['jpg', 'png', 'pdf', 'mp4'].includes(p.format);
 }
 

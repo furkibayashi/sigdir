@@ -9,7 +9,7 @@ const { SigdirError, toErrorInfo } = require('./errors');
 const { desiredOutputPath, commitFileUnique, fileSize, throwIfAborted } = require('./fileUtils');
 
 const SAFETY = 0.97; // %3 güvenlik payı
-const CONTAINER_RESERVE_BYTES = 32 * 1024; // MP4 başlıkları vb. için sabit pay
+const CONTAINER_RESERVE_BYTES = 32 * 1024; // MP4 başlıkları vb. için pay (küçük hedeflerde orantılı küçülür)
 const MIN_VIDEO_KBPS = 40;
 const MAX_RETRIES = 2;
 
@@ -161,7 +161,8 @@ const even = (n) => Math.max(2, Math.floor(n / 2) * 2);
 /** Hedef bitrate hesabı (kbit/s). Ses payı ve %3 güvenlik payı dahil. */
 function computeBitrates({ maxBytes, durationSec, hasAudio = true, mute = false }) {
   if (!(durationSec > 0)) throw new SigdirError('read_failed', 'no duration');
-  const usableBits = (maxBytes * SAFETY - CONTAINER_RESERVE_BYTES) * 8;
+  const reserve = Math.min(CONTAINER_RESERVE_BYTES, Math.max(4096, maxBytes * 0.02));
+  const usableBits = (maxBytes * SAFETY - reserve) * 8;
   const totalKbps = usableBits / durationSec / 1000;
   let audioKbps = 0;
   if (hasAudio && !mute) audioKbps = totalKbps >= 1000 ? 128 : totalKbps >= 500 ? 96 : totalKbps >= 250 ? 64 : 32;
