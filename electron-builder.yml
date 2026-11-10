@@ -1,0 +1,40 @@
+# Sığdır — electron-builder yapılandırması (Windows, kurulumsuz tek .exe)
+# Derleme Windows üzerinde yapılmalıdır: sharp ve ffmpeg-static, npm install sırasında
+# çalışılan platformun ikili dosyalarını indirir. Komut: npm run dist
+appId: com.sigdir.app
+productName: Sığdır
+copyright: "MIT Lisansı"
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - main.js
+  - preload.js
+  - package.json
+  - src/**/*
+  - assets/**/*
+  - "!**/*.map"
+  - "!**/*.md"
+  - "!tests/**"
+  - "!docs/**"
+  # ffprobe-static tüm platformların ikililerini içerir; yalnızca Windows x64 kalsın
+  - "!node_modules/ffprobe-static/bin/darwin/**"
+  - "!node_modules/ffprobe-static/bin/linux/**"
+  - "!node_modules/ffprobe-static/bin/win32/ia32/**"
+  - "!node_modules/@img/sharp-wasm32/**"
+asar: true
+# Yerel modüller ve çalıştırılabilir dosyalar asar dışına açılmalı
+asarUnpack:
+  - "node_modules/sharp/**/*"
+  - "node_modules/@img/**/*"
+  - "node_modules/ffmpeg-static/**/*"
+  - "node_modules/ffprobe-static/**/*"
+npmRebuild: false
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+portable:
+  artifactName: "Sigdir-${version}-portable.${ext}"
+  unicode: true
