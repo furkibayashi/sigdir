@@ -8,7 +8,7 @@ Geliştiricinin diğer uygulamalarıyla (Zamanlayıcı, FlacSync, Yakala, OtoTı
 Türkçe öncelikli (TR/EN), açık/koyu tema, kurulumsuz tek .exe, açık kaynak (MIT).
 
 ## Teknoloji
-- Electron 33 (`electron@33`), saf JavaScript (CommonJS ana süreç, renderer'da framework yok, vanilla JS + CSS).
+- Electron 45 (`electron@45`, desteklenen en güncel kararlı ana sürüm; SIG-004 ile 33'ten yükseltildi), saf JavaScript (CommonJS ana süreç, renderer'da framework yok, vanilla JS + CSS).
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; renderer sadece `window.sigdir` API'sini görür.
 - Görüntü: `sharp`. HEIC çözme: `heic-decode` (saf JS/WASM). PDF: `pdf-lib`. PDF önizleme gerekmez (MVP).
 - Video: sistemdeki `ffmpeg`/`ffprobe` (PATH) veya `ffmpeg-static`/`ffprobe-static` paketleri; bulunamazsa video sekmesi "ffmpeg bulunamadı" der, uygulama çökmez.
