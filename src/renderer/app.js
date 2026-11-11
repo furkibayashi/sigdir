@@ -243,7 +243,12 @@
     const added = { image: 0, pdf: 0, video: 0 };
     const problems = [];
     for (const info of infos) {
-      if (!info || info.error || info.kind === 'unknown') { problems.push(t('toast.unsupported', { name: (info && info.name) || baseName(info && info.path) })); continue; }
+      if (!info || info.error || info.kind === 'unknown') {
+        const name = (info && info.name) || baseName(info && info.path);
+        problems.push(!info || info.kind === 'unknown' || info.error === 'unsupported'
+          ? t('toast.unsupported', { name }) : `${name}: ${errText(info.error, info.message)}`);
+        continue;
+      }
       let dest = info.kind;
       if (dest === 'image' && S.tab === 'pdf') dest = 'pdf';
       if (dest === 'video') {
@@ -572,7 +577,7 @@
       extra = fitMeter(info.sizeBytes, limit, false);
     }
     let mismatch = null;
-    if (tg && tg.aspect && !it.crop && w && hh && it.status !== 'done' && !busy && Math.abs((w / hh) / tg.aspect - 1) > 0.03) {
+    if (tg && tg.aspect && !it.crop && w && hh && it.status !== 'done' && it.status !== 'error' && !busy && Math.abs((w / hh) / tg.aspect - 1) > 0.03) {
       mismatch = h('p', { class: 'f-hint' }, icon('crop', 'ic-xs'), t('file.mismatch'));
     }
     const canEdit = !busy && !['working', 'queued', 'done'].includes(it.status) && w && hh && info.thumb;
@@ -824,7 +829,7 @@
       if (r && r.ok && maxBytes && r.afterBytes > maxBytes) { r.ok = false; r.error = 'over_limit'; }
       if (r && r.ok) {
         st.summary = { type: 'ok', title: maxBytes ? t('pdf.doneMerge', { size: L.bytes(r.afterBytes) }) : t('pdf.doneMergeNoLimit', { size: L.bytes(r.afterBytes) }),
-          sub: baseName(r.output) + ' · ' + t('done.where', { dir: baseName(dirOf(r.output)) }), firstOutput: r.output };
+          sub: baseName(r.output) + (r.pages ? ' · ' + t('file.pages', { n: r.pages }) : '') + ' · ' + t('done.where', { dir: baseName(dirOf(r.output)) }), firstOutput: r.output };
       } else if (wasCancel || (r && r.error === 'cancelled')) {
         st.summary = { type: 'info', title: t('done.cancelledNone') };
       } else {

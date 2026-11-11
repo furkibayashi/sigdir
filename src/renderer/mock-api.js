@@ -268,7 +268,8 @@
       }
       const after = opts.maxBytes ? Math.min(before, Math.round(opts.maxBytes * 0.91)) : Math.round(before * 0.96);
       const dir = settings.outputDir || dirName(files[0]);
-      return { input: files[0], output: opts.output || dir + sep + 'birlesik-sigdir.pdf', ok: true, beforeBytes: before, afterBytes: after, width: 595, height: 842 };
+      const pages = files.reduce((a, f) => a + (describe(f).pages || 1), 0);
+      return { input: files[0], output: opts.output || dir + sep + 'birlesik-sigdir.pdf', ok: true, beforeBytes: before, afterBytes: after, width: 595, height: 842, pages, inputs: files.length };
     },
 
     async splitPdf(opts) {
