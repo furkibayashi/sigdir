@@ -27,6 +27,18 @@ const MESSAGES = {
     tr: 'Çıktı dosyası kaydedilemedi. Çıktı klasörüne yazma izniniz olduğundan ve diskte yer olduğundan emin olun.',
     en: 'The output file could not be saved. Make sure the output folder is writable and the disk is not full.',
   },
+  output_dir_unavailable: {
+    tr: 'Çıktı klasörü kullanılamıyor: silinmiş, çıkarılmış bir sürücüde ya da aslında bir dosya olabilir. Ayarlardan başka bir çıktı klasörü seçin.',
+    en: 'The output folder cannot be used: it may have been deleted, be on a removed drive, or be a file. Choose another output folder in Settings.',
+  },
+  disk_full: {
+    tr: 'Diskte yer kalmadı. Biraz yer açın veya ayarlardan başka bir sürücüde çıktı klasörü seçin.',
+    en: 'The disk is full. Free up some space or choose an output folder on another drive in Settings.',
+  },
+  name_too_long: {
+    tr: 'Dosya adı ya da klasör yolu çok uzun. Dosyayı daha kısa adlı bir klasöre taşıyın veya ayarlardan daha kısa bir çıktı klasörü seçin.',
+    en: 'The file name or folder path is too long. Move the file to a folder with a shorter path or choose a shorter output folder in Settings.',
+  },
   encrypted: {
     tr: 'Bu PDF parolayla korunuyor. Önce parolasını kaldırıp yeniden deneyin.',
     en: 'This PDF is password protected. Remove the password and try again.',
@@ -74,10 +86,15 @@ const MESSAGES = {
 };
 
 class SigdirError extends Error {
-  constructor(code, detail) {
+  /**
+   * code: sözleşmedeki hata kodu; opts.messageKey: aynı kod için daha açıklayıcı mesaj
+   * (ör. code 'write_failed' + messageKey 'output_dir_unavailable').
+   */
+  constructor(code, detail, opts = {}) {
     super(detail ? `${code}: ${detail}` : code);
     this.code = code;
     this.detail = detail;
+    this.messageKey = opts.messageKey || null;
   }
 }
 
@@ -89,11 +106,14 @@ function messageFor(code, lang = 'tr') {
 /** Herhangi bir hatayı { error, message } çiftine çevirir. */
 function toErrorInfo(err, lang = 'tr') {
   let code = 'unknown';
-  if (err instanceof SigdirError) code = err.code;
+  let key = null;
+  if (err instanceof SigdirError) { code = err.code; key = err.messageKey; }
   else if (err && err.code === 'ENOENT') code = 'not_found';
-  else if (err && ['EACCES', 'EPERM', 'ENOSPC', 'EROFS'].includes(err.code)) code = 'write_failed';
+  else if (err && err.code === 'ENAMETOOLONG') code = 'name_too_long';
+  else if (err && err.code === 'ENOSPC') { code = 'write_failed'; key = 'disk_full'; }
+  else if (err && ['EACCES', 'EPERM', 'EROFS'].includes(err.code)) code = 'write_failed';
   else if (err && err.name === 'AbortError') code = 'cancelled';
-  return { error: code, message: messageFor(code, lang) };
+  return { error: code, message: messageFor(key || code, lang) };
 }
 
 module.exports = { SigdirError, MESSAGES, messageFor, toErrorInfo };

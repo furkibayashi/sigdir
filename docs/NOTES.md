@@ -10,10 +10,13 @@
 - **Birimler:** profillerde `maxBytes` ondalık (200 KB = 200000 bayt). Güvenli taraf; arayüzün 1000 ile bölmesi doğru.
 - **Hatalar:** her uç `{ ok:false, error:'kod', message }` döner; `message` ayarlardaki dile (`lang`) göre TR/EN,
   doğrudan gösterilebilir. Kodlar: `too_small, unsupported, read_failed, not_found, write_failed, encrypted,
-  ffmpeg_missing, no_video, bad_range, bad_target, no_files, busy, cancelled, encode_failed, unknown`.
+  ffmpeg_missing, no_video, bad_range, bad_target, no_files, busy, cancelled, encode_failed, name_too_long, unknown`.
+  (`name_too_long` SIG-001 ile eklendi; `write_failed` artık duruma göre farklı mesaj taşır: izin, disk dolu,
+  "çıktı klasörü kullanılamıyor".)
   `inspect` hatalı dosyada reject etmez: `FileInfo.error` (+ `message`) doldurulur.
-- **Meşgul:** bir iş sürerken yeni `fitImages/mergePdf/splitPdf/fitVideo` çağrısı `{ok:false,error:'busy'}` döner
-  (fitImages normalde dizi döndürse de bu durumda tek nesne).
+- **Meşgul:** bir iş sürerken yeni `mergePdf/splitPdf/fitVideo` çağrısı `{ok:false,error:'busy'}` döner.
+  `fitImages` ise SIG-008'den beri **her durumda dizi** döner: geçersiz hedef, boş liste ve meşgulde de
+  dosya başına `{input, ok:false, error, message}` satırı (boş listede `input:null` olan tek satır).
 - **İptal:** `cancel()` sonrası video `error:'cancelled'` döner; toplu görselde kalan dosyalar `cancelled` olur.
 - **Ek alanlar (sözleşmeyi bozmaz):** `mergePdf` sonucu `pages`, `inputs`; `fitVideo` sonucu `durationSec`,
   `videoKbps`, `audioKbps`, `attempts`; `FileInfo` için `format` (görsel), `hasAudio` (video), PDF'te `width/height` pt.
@@ -67,3 +70,17 @@ Arayüz `src/renderer/**` hazır; preload/ipc koduna göre uyarlandı. Aşağıd
 pencerede kullanılıyor (electron-builder `buildResources: assets` ile otomatik bulur), `osym-vesikalik` ve
 `biyometrik` profillerine `"sizeLabel": "50×60 mm"` eklendi. 5–9 benim tarafımla uyumlu; `mock-api.js` pakette kalıyor
 (`files: src/**/*`).
+
+## [Yazılımcı-1 → Ekip] test raporu düzeltmeleri (SIG-001, 002, 004, 007, 008, 009)
+
+- **SIG-004:** Electron 45.3.0 (Chrome 156, Node 24). Electron 45, boş bir uygulamada bile kendi
+  `IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN` invoke kanalını kaydediyor; bizim kanalımız değil.
+- **SIG-001:** çıktı adı 255 bayta (Windows'ta ayrıca 259 karakterlik tam yola) sığacak şekilde kısaltılır.
+- **SIG-002:** çıktı klasörü bir dosya, silinmiş ya da olmayan bir sürücüdeyse `write_failed` + "Çıktı klasörü kullanılamıyor…".
+- **SIG-007:** tüm izin istekleri/kontrolleri reddedilir (`src/main/guards.js`).
+- **SIG-009:** `mergePdf({output})` yalnızca ayarlardaki çıktı klasörünün *doğrudan içindeyse* (ya da ana süreçteki
+  bir kayıt diyaloğunun onayladığı yol ise) kullanılır; aksi halde sessizce varsayılan ada (`<ilk>-sigdir.pdf`) düşer.
+- **[→ Test edici]:** şu 3 e2e testi eski davranışı bekliyor, güncellenmeli:
+  `images-ipc.spec.js:334` (`r.second` → `r.second[0]`), `:368` (`empty` → `empty[0]`, SIG-008 dizi);
+  `security.spec.js:148` (artık `r.output` keyfi yola değil varsayılan ada yazılır — testin beklentisi ters çevrilmeli);
+  `security.spec.js:99` Electron 45'in iç kanalını (`IMPORT_SHARED_TEXTURE_…`, `sigdir:` öneki yok) dışarıda bırakmalı.

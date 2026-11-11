@@ -104,3 +104,16 @@ test('PDF araçlarında hatalar reject etmez, kod + mesaj döner', async () => {
   assert.equal(m2.error, 'not_found');
   assert.ok(m2.message.length > 10);
 });
+
+test('SIG-002: PDF birleştirmede çıktı klasörü kullanılamazsa write_failed', async () => {
+  const pdf = await makePdf(path.join(dir, 'tek.pdf'), [[200, 200]]);
+  const notDir = path.join(dir, 'klasor-degil');
+  fs.writeFileSync(notDir, 'x');
+  const r = await mergePdf({ files: [pdf] }, { outputDir: notDir });
+  assert.equal(r.ok, false);
+  assert.equal(r.error, 'write_failed');
+  assert.match(r.message, /Çıktı klasörü/);
+  const s = await splitPdf({ file: pdf }, { outputDir: notDir, lang: 'en' });
+  assert.equal(s.error, 'write_failed');
+  assert.match(s.message, /output folder/);
+});

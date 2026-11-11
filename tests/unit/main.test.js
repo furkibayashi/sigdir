@@ -65,3 +65,79 @@ test('sağ tık menüsü: komut satırı ve Windows dışı platform', async () 
   assert.ok(contextMenu.TYPES.includes('.pdf') && contextMenu.TYPES.includes('video'));
   assert.equal(await contextMenu.isInstalled('linux'), false);
 });
+
+// ---------------------------------------------------------------- SIG-007 / 008 / 009
+const { trustedOutputPath, denyAllPermissions } = require('../../src/main/guards');
+const { runFitImages } = require('../../src/main/imageJob');
+const { loadProfiles } = require('../../src/core/profiles');
+
+test('SIG-009: mergePdf output yalnızca onaylı yol ya da çıktı klasörünün doğrudan içi olabilir', () => {
+  const outDir = path.resolve('/kullanici/cikti');
+  assert.equal(trustedOutputPath(path.join(outDir, 'birlesik.pdf'), { outputDir: outDir }), path.join(outDir, 'birlesik.pdf'));
+  const bad = [
+    path.resolve('/baska/yer/alt/klasor/gizli'),
+    path.join(outDir, 'alt', 'x.pdf'),
+    path.join(outDir, '..', 'kacis.pdf'),
+    outDir,
+    'goreli.pdf',
+    path.join(outDir, 'a\0b.pdf'),
+    42,
+    null,
+  ];
+  for (const o of bad) assert.equal(trustedOutputPath(o, { outputDir: outDir }), undefined, String(o));
+  // Çıktı klasörü seçilmemişse hiçbir renderer yolu kabul edilmez
+  assert.equal(trustedOutputPath(path.join(outDir, 'x.pdf'), { outputDir: null }), undefined);
+  // Ana süreç diyaloğunun onayladığı yol kabul edilir
+  const approved = new Set([path.resolve('/masaustu/kayit.pdf')]);
+  assert.equal(trustedOutputPath(path.resolve('/masaustu/kayit.pdf'), { approved }), path.resolve('/masaustu/kayit.pdf'));
+});
+
+test('SIG-007: tüm izin istekleri ve kontrolleri reddedilir', () => {
+  const s = {};
+  const fake = {
+    setPermissionRequestHandler: (fn) => { s.req = fn; },
+    setPermissionCheckHandler: (fn) => { s.check = fn; },
+    setDevicePermissionHandler: (fn) => { s.device = fn; },
+    setDisplayMediaRequestHandler: (fn) => { s.display = fn; },
+  };
+  denyAllPermissions(fake);
+  for (const perm of ['notifications', 'geolocation', 'media', 'clipboard-read', 'midi', 'openExternal', 'fullscreen']) {
+    let answer = 'yok';
+    s.req(null, perm, (v) => { answer = v; });
+    assert.equal(answer, false, perm);
+    assert.equal(s.check(null, perm, 'file://'), false, perm);
+  }
+  assert.equal(s.device({ deviceType: 'usb' }), false);
+  let media = null;
+  s.display({}, (v) => { media = v; });
+  assert.deepEqual(media, {});
+});
+
+test('SIG-008: fitImages her durumda dizi döndürür (geçersiz hedef, bilinmeyen profil, boş liste, meşgul)', async () => {
+  const profiles = loadProfiles();
+  const runJob = async (_k, fn) => fn(new AbortController().signal);
+  const busyJob = async () => ({ ok: false, error: 'busy' });
+  const files = ['/x/a.jpg', { path: '/x/b.png' }];
+  const cases = [
+    [{ files, custom: { format: 'jpg', maxBytes: 0 } }, runJob, 'bad_target', 2],
+    [{ files, profileId: 'yok-boyle-profil' }, runJob, 'bad_target', 2],
+    [{ files: [] }, runJob, 'no_files', 1],
+    [undefined, runJob, 'no_files', 1],
+    [{ files, profileId: 'osym-vesikalik' }, busyJob, 'busy', 2],
+  ];
+  for (const [opts, job, code, n] of cases) {
+    const res = await runFitImages(opts, { profiles, runJob: job, lang: 'tr' });
+    assert.ok(Array.isArray(res), code);
+    assert.equal(res.length, n, code);
+    for (const r of res) {
+      assert.equal(r.ok, false);
+      assert.equal(r.error, code);
+      assert.ok(r.message);
+      assert.equal(r.output, null);
+    }
+    if (n === 2) assert.deepEqual(res.map((r) => r.input), ['/x/a.jpg', '/x/b.png']);
+  }
+  // Normal yol: dosya başına sonuç (olmayan dosya → not_found satırı)
+  const ok = await runFitImages({ files: ['/yok/c.jpg'], profileId: 'osym-vesikalik' }, { profiles, runJob });
+  assert.deepEqual(ok.map((r) => [r.input, r.error]), [['/yok/c.jpg', 'not_found']]);
+});

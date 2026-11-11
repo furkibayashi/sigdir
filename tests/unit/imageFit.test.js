@@ -250,3 +250,25 @@ test('toplu işlem: ilerleme olayları ve iptal', async () => {
     rmrf(d);
   }
 });
+
+test('SIG-001/002: uzun adlı görsel sığdırılır; çıktı klasörü bir dosyaysa write_failed', async () => {
+  const d = tmpDir();
+  try {
+    const longIn = path.join(d, 'a'.repeat(246) + '.jpg');
+    fs.copyFileSync(src.small, longIn);
+    const t = resolveImageTarget({ profileId: 'osym-vesikalik' }, profiles);
+    const r = await fitImage(longIn, t);
+    assert.equal(r.ok, true, `${r.error} ${r.message}`);
+    assert.ok(fs.existsSync(r.output));
+    assert.ok(Buffer.byteLength(path.basename(r.output)) <= 255);
+
+    const notDir = path.join(d, 'dosya');
+    fs.writeFileSync(notDir, 'x');
+    const bad = await fitImage(src.small, t, { outputDir: notDir });
+    assert.equal(bad.ok, false);
+    assert.equal(bad.error, 'write_failed');
+    assert.match(bad.message, /Çıktı klasörü kullanılamıyor/);
+  } finally {
+    rmrf(d);
+  }
+});

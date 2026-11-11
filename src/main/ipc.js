@@ -4,6 +4,8 @@ const path = require('path');
 const { app, ipcMain, dialog, shell, nativeTheme } = require('electron');
 const core = require('../core');
 const contextMenu = require('./contextMenu');
+const { trustedOutputPath } = require('./guards');
+const { runFitImages } = require('./imageJob');
 
 const IMAGE_EXT = ['jpg', 'jpeg', 'jfif', 'png', 'webp', 'heic', 'heif', 'avif', 'bmp', 'tif', 'tiff', 'gif'];
 const VIDEO_EXT = ['mp4', 'm4v', 'mov', 'mkv', 'webm', 'avi', 'wmv', 'flv', '3gp', 'mts', 'm2ts', 'ts', 'mpg', 'mpeg'];
@@ -15,6 +17,8 @@ const VIDEO_EXT = ['mp4', 'm4v', 'mov', 'mkv', 'webm', 'avi', 'wmv', 'flv', '3gp
 function registerIpc(ctx) {
   const { settings } = ctx;
   let job = null; // { controller, kind }
+  // Ana süreçteki bir kayıt diyaloğundan gelen (renderer'ın uyduramayacağı) çıktı yolları
+  const approvedOutputs = ctx.approvedOutputs || new Set();
   const lang = () => settings.get().lang;
 
   const fail = (err) => ({ ok: false, ...core.toErrorInfo(err, lang()) });
@@ -104,27 +108,21 @@ function registerIpc(ctx) {
 
   handle('inspect', async (paths) => core.inspect(strList(paths), { lang: lang() }));
 
+  // SIG-008: sözleşme gereği her zaman Result[] (geçersiz hedef/meşgul/boş liste dahil)
   handle('fitImages', async (opts = {}) =>
-    runJob('images', async (signal) => {
-      const files = (Array.isArray(opts.files) ? opts.files : [])
-        .map((f) => (typeof f === 'string' ? { path: f } : f))
-        .filter((f) => f && typeof f.path === 'string');
-      if (!files.length) return fail(new core.SigdirError('no_files'));
-      const target = core.resolveImageTarget({ profileId: opts.profileId, custom: opts.custom }, core.loadProfiles(ctx.profilesFile));
-      const results = await core.fitImages(files, target, {
-        outputDir: outputDir(),
-        lang: lang(),
-        signal,
-        onProgress: (p) => sendProgress({ job: 'images', ...p }),
-      });
-      afterDone(results.filter((r) => r.ok).map((r) => r.output));
-      return results;
+    runFitImages(opts, {
+      profiles: core.loadProfiles(ctx.profilesFile),
+      outputDir: outputDir(),
+      lang: lang(),
+      runJob,
+      onProgress: (p) => sendProgress({ job: 'images', ...p }),
+      afterDone,
     }));
 
   handle('mergePdf', async (opts = {}) =>
     runJob('pdf', async (signal) => {
       const r = await core.mergePdf(
-        { files: strList(opts.files), output: typeof opts.output === 'string' ? opts.output : undefined, maxBytes: opts.maxBytes || undefined },
+        { files: strList(opts.files), output: trustedOutputPath(opts.output, { outputDir: settings.get().outputDir, approved: approvedOutputs }), maxBytes: opts.maxBytes || undefined },
         { outputDir: outputDir(), lang: lang(), signal, onProgress: (p) => sendProgress({ job: 'pdf', ...p }) },
       );
       if (r.ok) afterDone([r.output]);

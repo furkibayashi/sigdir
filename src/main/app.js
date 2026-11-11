@@ -2,11 +2,12 @@
 
 const path = require('path');
 const fs = require('fs');
-const { app, BrowserWindow, Menu, nativeTheme, shell } = require('electron');
+const { app, BrowserWindow, Menu, nativeTheme, shell, session } = require('electron');
 const { SettingsStore } = require('./settings');
 const { registerIpc } = require('./ipc');
 const { parseFilesFromArgv } = require('./argv');
 const contextMenu = require('./contextMenu');
+const { denyAllPermissions } = require('./guards');
 
 const ROOT = path.join(__dirname, '..', '..');
 const RENDERER_INDEX = path.join(ROOT, 'src', 'renderer', 'index.html');
@@ -140,6 +141,7 @@ function start() {
 
   app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
+    denyAllPermissions(session.defaultSession); // SIG-007: hiçbir izin gerekmiyor
     const sysLang = (app.getPreferredSystemLanguages()[0] || app.getLocale() || 'tr').toLowerCase().startsWith('tr') ? 'tr' : 'en';
     settings = new SettingsStore(path.join(app.getPath('userData'), 'settings.json'), { defaultLang: sysLang });
     contextMenuInstalled = await contextMenu.isInstalled().catch(() => false);
