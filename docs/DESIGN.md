@@ -69,7 +69,7 @@ Sayılar `font-variant-numeric: tabular-nums` (boyutlar kaymaz).
 
 ## 4. Ekranlar
 
-Varsayılan pencere ~1000×700; en küçük ~760×560 (≤ 900 px'te sağ bölme 280 px, ≤ 620 px yükseklikte sıkı düzen).
+Varsayılan pencere ~1000×700; en küçük ~760×560 (≤ 900 px'te sağ bölme 280 px ve dosya satırında durum çipi ile düğmeler sağda üst üste; ≤ 620 px yükseklikte sıkı düzen).
 
 | Ekran | İçerik |
 |---|---|
@@ -93,6 +93,8 @@ Varsayılan pencere ~1000×700; en küçük ~760×560 (≤ 900 px'te sağ bölme
 | **İptal** | Gri şerit "İptal edildi. Bitmiş olanlar kaydedildi." |
 | **ffmpeg yok** | Video sekmesinde kilit rozeti "ffmpeg yok"; sekme seçilebilir ama panel açıklama kartı gösterir (ne eksik, iki çözüm yolu, Görsel/PDF'e kısayollar). Video bırakılırsa bildirim. |
 | **Desteklenmeyen dosya** | Kırmızı bildirim: "belge.docx: Bu dosya türü desteklenmiyor." |
+| **İş sürerken gelen dosya** | Sağ tık / ikinci örnek / bırakma ile gelenler kuyruğa alınır ("İş sürüyor; gelen dosya iş bitince listeye eklenecek."), iş bitince sonuç şeridi silinmeden listeye eklenir ve bildirilir. |
+| **Video hazır** | Satırda üstü çizili kaynak → yeşil yeni boyut, yeşil "Sınırın %98 kadarı"; düğme "Hazır" (pasif). Kesim, seçenek ya da hedef değişince şerit kalkar, yeniden sığdırılabilir. |
 | **Sağ tık menüsünden gelen** | Dosyalar otomatik eklenir, doğru sekme açılır, bildirim "Sağ tık menüsünden 1 dosya geldi." |
 
 ## 6. Erişilebilirlik kararları
@@ -106,8 +108,8 @@ Varsayılan pencere ~1000×700; en küçük ~760×560 (≤ 900 px'te sağ bölme
 - **Ekran okuyucu:** simge düğmelerinin hepsinde dosya adını içeren `aria-label` ("Listeden kaldır: vesikalik.jpg");
   kart özetleri `aria-describedby`; ilerleme `role=progressbar` + `aria-valuenow`; video kaydırıcılarında
   `aria-valuetext` ("0:12,5"). Durum mesajları iki canlı bölgeden: `polite` (eklendi, bitti) ve `assertive` (hata).
-  Sonuç şeridi `role=status`; iş bitince odak şeritteki ilk düğmeye taşınır.
-- **Diyaloglar** yerel `<dialog>` + `showModal()` (odak tuzağı, Esc). Kapanınca odak açan düğmeye döner.
+  Sonuç şeridi `role=status`; iş bitince (fareyle ya da Ctrl+Enter ile başlatılmış olsun) odak o paneldeyse şeritteki ilk düğmeye taşınır. Şerit ve satır hataları dil değişince yeniden çevrilir.
+- **Diyaloglar** yerel `<dialog>` + `showModal()` (odak tuzağı); Esc ayrıca elle yakalanır (Chromium CloseWatcher Esc'i yutabiliyor). Kapanınca odak açan düğmeye döner.
   Arka plana tıklama yalnızca basma da arka planda başladıysa kapatır (kırpma sürüklemesi kaybolmaz).
 - **Hareket:** `prefers-reduced-motion` saygı görür; Windows yüksek kontrast için `forced-colors` kuralları.
 - **Hedef boyutları:** düğmeler ≥ 30 px, birincil 48 px; kırpma tutamaçlarının görünmez tıklama alanı 42 px.

@@ -87,6 +87,8 @@
     return message || t('err.generic');
   }
 
+  /** Değer ya da tembel metin (dil değişince yeniden çevrilsin diye fonksiyon saklanır). */
+  const txt = (x) => (typeof x === 'function' ? x() : x);
   const loc = (x) => (x && typeof x === 'object' ? (x[L.lang()] || x.tr || x.en || '') : (x || ''));
 
   // ---------------------------------------------------------------- durum
@@ -185,6 +187,7 @@
     document.documentElement.lang = L.lang();
     L.apply(document);
     renderAll();
+    $$('#toasts .icon-btn').forEach((b) => b.setAttribute('aria-label', t('common.close')));
   }
 
   async function saveSettings(partial) {
@@ -231,10 +234,22 @@
     if (Array.isArray(res) && res.length) addPaths(res, 'pick');
   }
 
+  /** İş sürerken (sağ tık / ikinci örnek / bırakma) gelen dosyalar; iş bitince eklenir. */
+  const queued = [];
+  function flushQueue() {
+    if (S.busy || !queued.length) return;
+    const paths = queued.splice(0);
+    addPaths(paths, 'queued');
+  }
+
   async function addPaths(paths, origin) {
     paths = Array.from(new Set((paths || []).filter(Boolean)));
     if (!paths.length) return;
-    if (S.busy) { toast(t('toast.busy'), 'warn'); return; }
+    if (S.busy) {
+      paths.forEach((p) => { if (!queued.includes(p)) queued.push(p); });
+      toast(t('toast.queued', { n: queued.length }), 'info');
+      return;
+    }
     document.body.classList.add('is-loading');
     let infos;
     try { infos = await api.inspect(paths); } finally { document.body.classList.remove('is-loading'); }
@@ -254,25 +269,28 @@
       if (dest === 'video') {
         if (!S.info.ffmpegAvailable) { problems.push(t('toast.videoNoFfmpeg', { name: info.name })); continue; }
         S.video.item = mkItem(info);
-        S.video.start = 0; S.video.end = info.durationSec || 0; S.video.summary = null;
+        S.video.start = 0; S.video.end = info.durationSec || 0; S.video.summary = null; S.video.result = null;
         added.video++;
         continue;
       }
       const list = S[dest].items;
       if (list.some((it) => it.path === info.path)) continue;
       list.push(mkItem(info));
-      S[dest].summary = null;
+      if (origin !== 'queued') S[dest].summary = null; // az önce biten işin sonucu görünür kalsın
       added[dest]++;
     }
     const total = added.image + added.pdf + added.video;
-    if (total && !added[S.tab]) {
+    if (total && !added[S.tab] && origin !== 'queued') {
       const best = TABS.slice().sort((a, b) => added[b] - added[a])[0];
       switchTab(best);
     }
     renderAll();
     if (total) {
-      const msg = origin === 'os' ? t('toast.fromOS', { n: total }) : t('toast.added', { n: total });
-      if (origin === 'os' || origin === 'drop') toast(msg, 'success'); else announce(msg);
+      const other = TABS.find((k) => added[k] && k !== S.tab);
+      const msg = origin === 'queued'
+        ? t('toast.queuedAdded', { n: total }) + (other ? ' ' + t('toast.inTab', { tab: t('tabs.' + other) }) : '')
+        : origin === 'os' ? t('toast.fromOS', { n: total }) : t('toast.added', { n: total });
+      if (origin === 'os' || origin === 'drop' || origin === 'queued') toast(msg, 'success'); else announce(msg);
       if (origin === 'pick' || origin === 'drop') {
         const first = $(`#panel-${S.tab} .file-list li:last-child [data-fkey], #panel-${S.tab} .video-editor [data-fkey]`);
         if (first && document.activeElement && document.activeElement.closest('.dropzone')) first.focus({ preventScroll: true });
@@ -395,7 +413,7 @@
     const cls = sum.type === 'ok' ? 'banner-ok' : sum.type === 'warn' ? 'banner-warn' : sum.type === 'err' ? 'banner-err' : 'banner-info';
     return h('div', { class: 'banner ' + cls, role: 'status' },
       h('span', { class: 'banner-icon' }, icon(sum.type === 'ok' ? 'check' : sum.type === 'info' ? 'info' : 'alert')),
-      h('div', { class: 'banner-text' }, h('strong', {}, sum.title), sum.sub ? h('span', {}, sum.sub) : null),
+      h('div', { class: 'banner-text' }, h('strong', {}, txt(sum.title)), txt(sum.sub) ? h('span', {}, txt(sum.sub)) : null),
       h('div', { class: 'banner-actions' }, actions));
   }
 
@@ -570,7 +588,7 @@
     }
     let extra = null;
     if (it.status === 'error') {
-      extra = h('p', { class: 'f-error' }, icon('alert', 'ic-xs'), it.errorText || t('err.generic'));
+      extra = h('p', { class: 'f-error' }, icon('alert', 'ic-xs'), txt(it.errorText) || t('err.generic'));
     } else if (it.status === 'done' && r && limit) {
       extra = fitMeter(r.afterBytes, limit, true);
     } else if (limit) {
@@ -640,33 +658,37 @@
 
     let ok = 0; let err = 0; let firstOutput = null; let lastOk = null;
     if (isErr(res) || !Array.isArray(res)) {
-      todo.forEach((it) => { it.status = 'error'; it.errorText = errText(res && res.error, res && res.message); });
+      todo.forEach((it) => { it.status = 'error'; it.errorText = () => errText(res && res.error, res && res.message); });
       err = todo.length;
     } else {
       for (const it of todo) {
         const r = res.find((x) => x && x.input === it.path);
-        if (!r) { it.status = wasCancel ? 'ready' : 'error'; if (!wasCancel) { it.errorText = t('err.generic'); err++; } continue; }
+        if (!r) { it.status = wasCancel ? 'ready' : 'error'; if (!wasCancel) { it.errorText = () => t('err.generic'); err++; } continue; }
         if (r.ok && r.afterBytes > tg.maxBytes) { r.ok = false; r.error = 'over_limit'; }
         if (r.ok) { it.status = 'done'; it.result = r; ok++; firstOutput = firstOutput || r.output; lastOk = r; }
         else if (r.error === 'cancelled') { it.status = 'ready'; }
-        else { it.status = 'error'; it.errorText = errText(r.error, r.message); err++; }
+        else { it.status = 'error'; it.errorText = () => errText(r.error, r.message); err++; }
       }
     }
     const allOk = st.items.every((it) => it.status === 'done');
-    if (wasCancel) st.summary = { type: 'info', title: t('done.cancelled'), sub: ok ? whereText() : '', firstOutput };
+    if (wasCancel) st.summary = { type: 'info', title: () => t('done.cancelled'), sub: () => (ok ? whereText() : ''), firstOutput };
     else if (ok && !err) {
-      st.summary = { type: 'ok', title: ok === 1 && allOk ? t('done.single', { size: L.bytes(lastOk.afterBytes) }) : t('done.multi', { n: ok }),
-        sub: t('done.where', { dir: baseName(dirOf(firstOutput)) || dirOf(firstOutput) }), firstOutput };
-    } else if (ok && err) st.summary = { type: 'warn', title: t('done.partial', { ok, err }), sub: t('done.where', { dir: baseName(dirOf(firstOutput)) }), firstOutput };
-    else st.summary = { type: 'err', title: t('done.failed'), sub: '' };
+      st.summary = { type: 'ok', title: () => (ok === 1 && allOk ? t('done.single', { size: L.bytes(lastOk.afterBytes) }) : t('done.multi', { n: ok })),
+        sub: () => t('done.where', { dir: baseName(dirOf(firstOutput)) || dirOf(firstOutput) }), firstOutput };
+    } else if (ok && err) st.summary = { type: 'warn', title: () => t('done.partial', { ok, err }), sub: () => t('done.where', { dir: baseName(dirOf(firstOutput)) }), firstOutput };
+    else st.summary = { type: 'err', title: () => t('done.failed'), sub: '' };
     renderAll();
-    announce(st.summary.title, st.summary.type === 'err');
+    announce(txt(st.summary.title), st.summary.type === 'err');
     focusBanner('image');
+    flushQueue();
   }
 
+  /** İş bitince odağı sonuç şeridine taşı — kullanıcı başka sekmeye/diyaloğa geçmediyse. */
   function focusBanner(kind) {
     const b = $(`#panel-${kind} .banner .btn`);
-    if (b && (!document.activeElement || document.activeElement === document.body || document.activeElement.closest('.pane-foot'))) b.focus({ preventScroll: true });
+    const a = document.activeElement;
+    if (!b || $('dialog[open]') || S.tab !== kind) return;
+    if (!a || a === document.body || a.closest(`#panel-${kind}`)) b.focus({ preventScroll: true });
   }
 
   // ---------------------------------------------------------------- PDF paneli
@@ -828,12 +850,12 @@
       st.items.forEach((it) => { it.status = 'ready'; });
       if (r && r.ok && maxBytes && r.afterBytes > maxBytes) { r.ok = false; r.error = 'over_limit'; }
       if (r && r.ok) {
-        st.summary = { type: 'ok', title: maxBytes ? t('pdf.doneMerge', { size: L.bytes(r.afterBytes) }) : t('pdf.doneMergeNoLimit', { size: L.bytes(r.afterBytes) }),
-          sub: baseName(r.output) + (r.pages ? ' · ' + t('file.pages', { n: r.pages }) : '') + ' · ' + t('done.where', { dir: baseName(dirOf(r.output)) }), firstOutput: r.output };
+        st.summary = { type: 'ok', title: () => (maxBytes ? t('pdf.doneMerge', { size: L.bytes(r.afterBytes) }) : t('pdf.doneMergeNoLimit', { size: L.bytes(r.afterBytes) })),
+          sub: () => baseName(r.output) + (r.pages ? ' · ' + t('file.pages', { n: r.pages }) : '') + ' · ' + t('done.where', { dir: baseName(dirOf(r.output)) }), firstOutput: r.output };
       } else if (wasCancel || (r && r.error === 'cancelled')) {
-        st.summary = { type: 'info', title: t('done.cancelledNone') };
+        st.summary = { type: 'info', title: () => t('done.cancelledNone') };
       } else {
-        st.summary = { type: 'err', title: t('pdf.failed'), sub: errText(r && r.error, r && r.message) };
+        st.summary = { type: 'err', title: () => t('pdf.failed'), sub: () => errText(r && r.error, r && r.message) };
       }
     } else {
       const pdfs = st.items.filter((it) => it.info.kind === 'pdf');
@@ -849,19 +871,20 @@
         let r;
         try { r = await api.splitPdf({ file: it.path }); } catch (e) { r = { ok: false, error: 'exception', message: String(e) }; }
         if (r && r.ok) { it.status = 'done'; pages += (r.outputs || []).length; first = first || (r.outputs || [])[0]; }
-        else { it.status = 'error'; it.errorText = errText(r && r.error, r && r.message); fails++; lastErr = it.errorText; }
+        else { const rr = r; it.status = 'error'; it.errorText = () => errText(rr && rr.error, rr && rr.message); fails++; lastErr = it.errorText; }
       }
       const wasCancel = S.cancelling;
       S.busy = null; S.cancelling = false;
       st.items.forEach((it) => { if (it.status !== 'error') it.status = 'ready'; });
-      if (pages && !fails) st.summary = { type: 'ok', title: t('pdf.doneSplit', { n: pages }), sub: t('done.where', { dir: baseName(dirOf(first)) }), firstOutput: first };
-      else if (pages) st.summary = { type: 'warn', title: t('pdf.doneSplitPartial', { n: pages, err: fails }), sub: lastErr, firstOutput: first };
-      else if (wasCancel) st.summary = { type: 'info', title: t('done.cancelledNone') };
-      else st.summary = { type: 'err', title: t('pdf.failed'), sub: lastErr };
+      if (pages && !fails) st.summary = { type: 'ok', title: () => t('pdf.doneSplit', { n: pages }), sub: () => t('done.where', { dir: baseName(dirOf(first)) }), firstOutput: first };
+      else if (pages) st.summary = { type: 'warn', title: () => t('pdf.doneSplitPartial', { n: pages, err: fails }), sub: lastErr, firstOutput: first };
+      else if (wasCancel) st.summary = { type: 'info', title: () => t('done.cancelledNone') };
+      else st.summary = { type: 'err', title: () => t('pdf.failed'), sub: lastErr };
     }
     renderAll();
-    announce(st.summary.title + (st.summary.sub && st.summary.type === 'err' ? '. ' + st.summary.sub : ''), st.summary.type === 'err');
+    announce(txt(st.summary.title) + (txt(st.summary.sub) && st.summary.type === 'err' ? '. ' + txt(st.summary.sub) : ''), st.summary.type === 'err');
     focusBanner('pdf');
+    flushQueue();
   }
 
   $('#pdf-mode').addEventListener('change', (e) => {
@@ -949,8 +972,7 @@
     const head = h('div', { class: 'v-head' }, frame,
       h('div', { class: 'v-info' },
         h('div', { class: 'f-name', title: info.path }, info.name),
-        h('div', { class: 'f-meta' }, L.bytes(info.sizeBytes), h('span', { class: 'm-sep' }, '·'), L.time(dur),
-          info.width ? [h('span', { class: 'm-sep' }, '·'), `${info.width}×${info.height}`] : null),
+        h('div', { class: 'f-meta', id: 'v-meta' }, videoMeta()),
         h('div', { class: 'v-fit' })));
 
     const trim = h('fieldset', { class: 'v-trim', disabled: busy },
@@ -970,12 +992,34 @@
 
     const opts = h('fieldset', { class: 'v-opts', disabled: busy },
       h('legend', { class: 'sr-only' }, t('video.options')),
-      optSwitch('v-vertical', 'phone', t('video.vertical'), t('video.verticalHint'), v.vertical, (on) => { v.vertical = on; v.verticalAuto = false; $('.v-frame', ed).classList.toggle('is-vertical', on); }),
-      optSwitch('v-mute', 'mute', t('video.mute'), t('video.muteHint'), v.mute, (on) => { v.mute = on; updateEstimate(); }));
+      optSwitch('v-vertical', 'phone', t('video.vertical'), t('video.verticalHint'), v.vertical, (on) => { v.vertical = on; v.verticalAuto = false; $('.v-frame', ed).classList.toggle('is-vertical', on); invalidateVideo(); updateEstimate(); renderFoot('video'); }),
+      optSwitch('v-mute', 'mute', t('video.mute'), t('video.muteHint'), v.mute, (on) => { v.mute = on; invalidateVideo(); updateEstimate(); renderFoot('video'); }));
 
     const est = h('div', { class: 'v-est', id: 'v-est' });
     ed.append(head, trim, opts, est);
     syncTrim();
+  }
+
+  function videoDone() { const v = S.video; return !!(v.summary && v.summary.type === 'ok' && v.result); }
+
+  function videoMeta() {
+    const v = S.video; const info = v.item.info; const r = videoDone() ? v.result : null;
+    if (r) {
+      return [h('span', { class: 'm-before' }, L.bytes(r.beforeBytes || info.sizeBytes)), icon('arrow', 'ic-xs m-arrow'),
+        h('strong', { class: 'm-after' }, L.bytes(r.afterBytes)), h('span', { class: 'm-sep' }, '·'), L.time((v.end - v.start) || info.durationSec || 0),
+        r.width ? [h('span', { class: 'm-sep' }, '·'), `${r.width}×${r.height}`] : null];
+    }
+    return [L.bytes(info.sizeBytes), h('span', { class: 'm-sep' }, '·'), L.time(info.durationSec || 0),
+      info.width ? [h('span', { class: 'm-sep' }, '·'), `${info.width}×${info.height}`] : null];
+  }
+
+  /** Video ayarı değişince eski sonuç geçersiz: şeridi kaldır, çubuğu ve düğmeyi yenile. */
+  function invalidateVideo() {
+    const v = S.video;
+    if (!v.summary) return;
+    v.summary = null; v.result = null;
+    $('.banner-slot', P('video')).textContent = '';
+    const m = $('#v-meta'); if (m) m.replaceChildren(...videoMeta().flat(Infinity).filter(Boolean).map((x) => (typeof x === 'object' ? x : document.createTextNode(String(x)))));
   }
 
   function optSwitch(id, iconName, label, hint, checked, onChange) {
@@ -993,7 +1037,7 @@
     const minLen = Math.min(1, dur);
     if (start != null && !Number.isNaN(start)) v.start = clamp(start, 0, Math.max(0, v.end - minLen));
     if (end != null && !Number.isNaN(end)) v.end = clamp(end, Math.min(dur, v.start + minLen), dur);
-    v.summary = null;
+    invalidateVideo();
     syncTrim(src);
   }
 
@@ -1023,7 +1067,11 @@
     if (!box) return;
     const v = S.video; const tg = videoTarget();
     box.textContent = '';
-    if (fitBox) { fitBox.textContent = ''; if (tg && !tg.invalid) fitBox.appendChild(fitMeter(v.item.info.sizeBytes * ((v.end - v.start) / (v.item.info.durationSec || 1)), tg.maxBytes, false)); }
+    if (fitBox) {
+      fitBox.textContent = '';
+      if (videoDone()) fitBox.appendChild(fitMeter(v.result.afterBytes, tg && !tg.invalid ? tg.maxBytes : v.result.afterBytes, true));
+      else if (tg && !tg.invalid) fitBox.appendChild(fitMeter(v.item.info.sizeBytes * ((v.end - v.start) / (v.item.info.durationSec || 1)), tg.maxBytes, false));
+    }
     if (!tg || tg.invalid) return;
     const len = Math.max(0.1, v.end - v.start);
     const kbps = (tg.maxBytes * 8 * 0.94) / 1000 / len - (v.mute ? 0 : 128);
@@ -1053,15 +1101,17 @@
     S.busy = null; S.cancelling = false;
     if (r && r.ok && r.afterBytes > tg.maxBytes) { r.ok = false; r.error = 'over_limit'; }
     if (r && r.ok) {
-      v.summary = { type: 'ok', title: t('done.single', { size: L.bytes(r.afterBytes) }), sub: baseName(r.output) + ' · ' + t('done.where', { dir: baseName(dirOf(r.output)) }), firstOutput: r.output };
+      v.result = r;
+      v.summary = { type: 'ok', title: () => t('done.single', { size: L.bytes(r.afterBytes) }), sub: () => baseName(r.output) + ' · ' + t('done.where', { dir: baseName(dirOf(r.output)) }), firstOutput: r.output };
     } else if (wasCancel || (r && r.error === 'cancelled')) {
-      v.summary = { type: 'info', title: t('done.cancelledNone') };
+      v.summary = { type: 'info', title: () => t('done.cancelledNone') };
     } else {
-      v.summary = { type: 'err', title: t('video.failed'), sub: errText(r && r.error, r && r.message) };
+      v.summary = { type: 'err', title: () => t('video.failed'), sub: () => errText(r && r.error, r && r.message) };
     }
     renderAll();
-    announce(v.summary.title + (v.summary.type === 'err' && v.summary.sub ? '. ' + v.summary.sub : ''), v.summary.type === 'err');
+    announce(txt(v.summary.title) + (v.summary.type === 'err' && txt(v.summary.sub) ? '. ' + txt(v.summary.sub) : ''), v.summary.type === 'err');
     focusBanner('video');
+    flushQueue();
   }
 
   // ---------------------------------------------------------------- alt bölüm (Sığdır düğmesi)
@@ -1108,8 +1158,9 @@
       if (!v.item) hint = t('hint.noFile');
       else if (!tg) hint = t('hint.noTargetVideo');
       else if (tg.invalid) hint = t('hint.invalid');
+      else if (videoDone()) { hint = t('video.doneHint'); }
       else { disabled = !!S.busy; hint = t('video.hint', { len: L.dur(v.end - v.start), target: tg.label }) + ' ' + whereText(); }
-      goFoot(foot, { label: t('video.go'), iconName: 'fit', disabled, hint, onGo: runVideo, fkey: 'go-video' });
+      goFoot(foot, { label: videoDone() ? t('video.done') : t('video.go'), iconName: 'fit', disabled, hint, onGo: runVideo, fkey: 'go-video' });
     }
   }
 
@@ -1169,18 +1220,23 @@
     C.item = it; C.rot = it.rotate || 0; C.aspect = tg && !tg.invalid ? tg.aspect : null;
     $('#crop-sub').textContent = C.aspect ? t('crop.sub', { ratio: tg.aspectLabel || ratioText(C.aspect), target: tg.label }) : t('crop.free');
     C.img = new Image();
+    // Diyalog hemen açılır (Esc/odak beklenen gibi çalışsın); görüntü yüklenince çizilir.
+    C.crop = null;
+    box.style.width = '0px'; box.style.height = '0px';
+    canvas.width = 0; canvas.height = 0;
+    if (!dlgCrop.open) dlgCrop.showModal();
+    box.focus();
     C.img.onload = () => {
+      if (C.item !== it || !dlgCrop.open) return;
       C.crop = it.crop && (it.rotate || 0) === C.rot ? Object.assign({}, it.crop) : defaultCrop();
-      dlgCrop.showModal();
       layoutCrop();
-      box.focus();
     };
     C.img.src = it.info.thumb;
   }
   const ratioText = (a) => { const g = (x, y) => (y ? g(y, x % y) : x); const w = Math.round(a * 100); const d = g(w, 100); return `${w / d}:${100 / d}`; };
 
   function layoutCrop() {
-    if (!C.item) return;
+    if (!C.item || !C.crop) return;
     const wrap = $('.crop-stage-wrap', dlgCrop);
     const maxW = Math.max(200, wrap.clientWidth - 32); const maxH = Math.max(160, wrap.clientHeight - 32);
     const [W, H] = cropSrcDims();
@@ -1244,6 +1300,7 @@
   }
 
   box.addEventListener('pointerdown', (e) => {
+    if (!C.crop) return;
     if (e.button !== 0) return;
     e.preventDefault();
     box.focus();
@@ -1262,6 +1319,7 @@
   box.addEventListener('pointerup', endDrag);
   box.addEventListener('pointercancel', endDrag);
   box.addEventListener('keydown', (e) => {
+    if (!C.crop) return;
     const [W, H] = cropSrcDims();
     const step = Math.max(1, Math.round(Math.max(W, H) * (e.shiftKey ? 0.05 : 0.01)));
     const c = C.crop;
@@ -1273,6 +1331,7 @@
   });
 
   function rotateCrop(d) {
+    if (!C.crop) return;
     C.rot = (C.rot + d + 360) % 360;
     C.crop = defaultCrop();
     layoutCrop();
@@ -1285,7 +1344,7 @@
 
   function applyCrop() {
     const it = C.item;
-    if (!it) return;
+    if (!it || !C.crop) return;
     const [W, H] = cropSrcDims();
     const c = C.crop;
     let x = Math.round(c.x); let y = Math.round(c.y); let w = Math.round(c.w); let hh = Math.round(c.h);
@@ -1330,6 +1389,8 @@
       return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
     };
     d.addEventListener('pointerdown', (e) => { downOutside = e.target === d && outside(e); });
+    // Esc her zaman kapatsın (Chromium'un CloseWatcher kuralları art arda açılan diyaloglarda Esc'i yutabiliyor).
+    d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && d.open) { e.preventDefault(); e.stopPropagation(); d.close(); } });
     d.addEventListener('click', (e) => {
       if (e.target === d && downOutside && outside(e)) d.close();
       else if (e.target.closest('[data-close]')) d.close();
