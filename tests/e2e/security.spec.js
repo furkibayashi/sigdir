@@ -6,7 +6,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { test, expect } = require('@playwright/test');
+const { test, expect, _electron } = require('@playwright/test');
 const H = require('./helpers');
 
 // docs/SPEC.md "IPC sözleşmesi — window.sigdir"
@@ -96,15 +96,32 @@ test('preload API sözleşmeyle birebir (eksik yok; fazlası yalnızca belgelenm
   expect(await ctx.win.evaluate(() => window.sigdir.getPathForFile({}))).toBe('');
 });
 
-test('ana süreç IPC yüzeyi: yalnızca sözleşmedeki kanallar (+ dahili takePendingFiles); senkron dinleyici yok', async () => {
+test('ana süreç IPC yüzeyi: Electron iç kanalları (boş uygulama taban çizgisi) hariç yalnızca sözleşme kanalları (+ dahili takePendingFiles); senkron dinleyici yok', async () => {
+  // Taban çizgisi: aynı Electron sürümüyle boş bir uygulama (Electron 45 kendi iç invoke kanallarını kaydeder)
+  const empty = H.mkTmp('bos-electron-');
+  fs.writeFileSync(path.join(empty, 'package.json'), JSON.stringify({ name: 'bos', main: 'main.js' }));
+  fs.writeFileSync(path.join(empty, 'main.js'), "const { app, BrowserWindow } = require('electron'); app.whenReady().then(() => { new BrowserWindow({ show: false }).loadURL('about:blank'); });");
+  const appTmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'sgd-'));
+  const env = { ...process.env, TMPDIR: appTmp };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const base = await _electron.launch({ executablePath: require(path.join(H.ROOT, 'node_modules', 'electron')), args: ['--no-sandbox', empty], env });
+  let baseline;
+  try {
+    await base.firstWindow();
+    baseline = await base.evaluate(({ ipcMain }) => ({ invoke: [...ipcMain._invokeHandlers.keys()], on: ipcMain.eventNames().map(String) }));
+  } finally {
+    await base.close();
+    fs.rmSync(appTmp, { recursive: true, force: true });
+  }
   const r = await ctx.app.evaluate(({ ipcMain }) => ({
     invoke: [...(ipcMain._invokeHandlers ? ipcMain._invokeHandlers.keys() : [])].sort(),
     on: ipcMain.eventNames().map(String),
   }));
+  const own = r.invoke.filter((c) => !baseline.invoke.includes(c)).sort();
   const expected = CONTRACT.filter((k) => !k.startsWith('on')).map((k) => 'sigdir:' + k).concat('sigdir:takePendingFiles').sort();
-  H.writeEvidence('ipc-channels.json', r);
-  expect(r.invoke).toEqual(expected);
-  expect(r.on.filter((e) => e !== 'error')).toEqual([]);
+  H.writeEvidence('ipc-channels.json', { baseline, app: r });
+  expect(own).toEqual(expected);
+  expect(r.on.filter((e) => !baseline.on.includes(e))).toEqual([]);
 });
 
 test('gezinme ve yeni pencere engelli; sayfa file:// üzerinde kalır', async () => {
@@ -145,16 +162,33 @@ test('sender doğrulaması: file:// dışı bir kaynaktan gelen IPC reddedilir',
   expect(r.good).toBe(true);
 });
 
-test('mergePdf "output": renderer çıktıyı keyfi bir yola yazabiliyor mu? (kayıt)', async () => {
+test('mergePdf "output" (SIG-009): keyfi yol reddedilir, varsayılan ada yazılır; çıktı klasörünün doğrudan içi kabul edilir', async () => {
   const dir = H.mkTmp('fx-sec-');
   const pdf = await H.makePdf(path.join(dir, 'a.pdf'), [[200, 200]]);
-  const elsewhere = path.join(H.mkTmp('baska-yer-'), 'alt', 'klasor', 'gizli');
+  const elsewhereRoot = H.mkTmp('baska-yer-');
+  const elsewhere = path.join(elsewhereRoot, 'alt', 'klasor', 'gizli');
+  await H.api(ctx.win, 'setSettings', { outputDir: null });
   const r = await H.api(ctx.win, 'mergePdf', { files: [pdf], output: elsewhere });
   H.writeEvidence('merge-output-path.json', r);
-  // Sözleşmede "output?: string" serbest; bu test yalnızca davranışı kayda geçirir.
   expect(r.ok).toBe(true);
-  expect(r.output).toBe(elsewhere + '.pdf');
+  expect(r.output).toBe(path.join(dir, 'a-sigdir.pdf'));
   expect(fs.existsSync(r.output)).toBe(true);
+  expect(fs.existsSync(elsewhere + '.pdf')).toBe(false);
+  expect(fs.existsSync(path.join(elsewhereRoot, 'alt'))).toBe(false);
+  // Ayarlardaki çıktı klasörünün doğrudan içindeki ad kabul edilir; alt klasör/.. kaçışı kabul edilmez
+  const out = H.mkTmp('cikti-');
+  await H.api(ctx.win, 'setSettings', { outputDir: out });
+  try {
+    const ok = await H.api(ctx.win, 'mergePdf', { files: [pdf], output: path.join(out, 'birlesik') });
+    expect(ok.output).toBe(path.join(out, 'birlesik.pdf'));
+    const sub = await H.api(ctx.win, 'mergePdf', { files: [pdf], output: path.join(out, 'alt', 'x') });
+    expect(sub.output).toBe(path.join(out, 'a-sigdir.pdf'));
+    const esc = await H.api(ctx.win, 'mergePdf', { files: [pdf], output: path.join(out, '..', 'kacis') });
+    expect(path.dirname(esc.output)).toBe(out);
+    expect(fs.existsSync(path.join(path.dirname(out), 'kacis.pdf'))).toBe(false);
+  } finally {
+    await H.api(ctx.win, 'setSettings', { outputDir: null });
+  }
 });
 
 test('sürüm: Electron sürümü ve destek durumu (bilgi)', async () => {

@@ -1,5 +1,54 @@
 # Sığdır — Test Raporu
 
+## Tur 2 — Yeniden test (2026-11-12)
+
+**Test edilen sürüm:** `main` @ `129a8dd` (Electron 45.3.0 / Chrome 156 / Node 24) · düzeltme commit'leri `2f9acb8`, `f51bbef`, `5f8edf7`, `129a8dd`.
+
+| | Test | Geçti | Kaldı |
+|---|---:|---:|---:|
+| Birim testleri (`npm test`) | 46 | 46 | 0 |
+| Uçtan uca (`xvfb-run -a npm run test:e2e -- --workers=1`, 2,1 dk) | 47 | 47 | 0 |
+
+İki tam koşuda 47/47 (ilk koşuda kalan tek test aşağıdaki SIG-012 zamanlama bulgusuydu; test kırp penceresinde küçük resmin yüklenmesini
+bekleyecek şekilde düzeltildi, açılış anındaki metin ayrıca kaydediliyor).
+
+**Test güncellemeleri** (Yazılımcı-1'in `docs/NOTES.md` isteği): `images-ipc.spec.js` meşgul ve boş liste testleri artık `fitImages` dizisinin
+ilk öğesini denetliyor (`r.second[0]`, `empty[0]`) ve geçersiz hedefte dizi bekliyor (SIG-008); `security.spec.js` mergePdf testi ters çevrildi
+(keyfi yol reddedilip varsayılan ada yazılmalı; çıktı klasörünün doğrudan içi kabul, alt klasör ve `..` reddedilmeli — SIG-009);
+IPC yüzeyi testi Electron'un iç kanallarını aynı sürümle açılan **boş bir Electron uygulamasından alınan taban çizgisiyle** çıkarıyor
+(`IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN`), kalan kanallar birebir sözleşme + dahili `takePendingFiles`.
+
+| ID | Önem | Durum | Kanıt (Tur 2) |
+|---|---|---|---|
+| SIG-001 | Orta | **Doğrulandı** | 250 baytlık ad → `aaa…a-sigdir.jpg` kısaltılarak yazıldı (`long-names.json`, test geçti) |
+| SIG-002 | Orta | **Doğrulandı** | ENOTDIR ve EROFS → `write_failed` + "Çıktı klasörü kullanılamıyor… Ayarlar'dan başka bir klasör seçin" (`unwritable-enotdir.json`) |
+| SIG-003 | Orta | **Doğrulandı** | İş sürerken ikinci örnekten gelen `foto.webp` iş bitince listeye eklendi (`busy-second-instance.json`) |
+| SIG-004 | Orta | **Doğrulandı** | Electron 45.3.0, Chrome 156.0.8078.96 (`versions.json`); tüm e2e bu sürümde geçti |
+| SIG-005 | Düşük | **Doğrulandı** | Dil değişince şerit "That didn't work. See the note on the file.", satır hatası "File not found; …" (`i18n-hunt.json`) |
+| SIG-006 | Düşük | **Doğrulandı** | Ctrl+Enter sonrası odak `img-reveal` (şeritte) (`keyboard-focus-after-run.json`) |
+| SIG-007 | Düşük | **Doğrulandı** | Bildirim ve konum izni `denied` (`permissions.json`) |
+| SIG-008 | Düşük | **Doğrulandı** | `busy`, `no_files`, `bad_target` dizi içinde dönüyor (test güncellendi ve geçti) |
+| SIG-009 | Düşük | **Doğrulandı** | Keyfi `output` → `a-sigdir.pdf` (kaynağın yanı), hedef klasör hiç oluşturulmadı; çıktı klasörünün doğrudan içi kabul (`merge-output-path.json`) |
+| SIG-010 | Düşük | **Doğrulandı** | Video bitince yeşil "94,8 MB → 9,8 MB · Sınırın %98 kadarı", düğme "Hazır" (`ui-video-done-tr-dark.png`, gözle incelendi) |
+| SIG-011 | Düşük | **Doğrulandı** | 760×560'ta yüzde etiketi tek satır, eylem simgeleri durum çipinin altına diziliyor; EN boş ekranda kalkan simgesi metinle hizalı (`min-*-04-sonuc.png`, `min-dark-09-en-bos.png`) |
+| SIG-012 | Düşük | **Yeni** | Aşağıda |
+
+### SIG-012 — Kırp penceresi açılırken okuma alanı kısa süre önceki oturumun metnini gösteriyor (yeni, `129a8dd` sonrası)
+- **Önem:** Düşük · **Sorumlu:** Tasarımcı-1
+- **Adımlar:** TR'de bir fotoğrafın kırp penceresini aç, kapat → dili EN yap → kırp penceresini yeniden aç; küçük resim yüklenmeden okuma alanına bak.
+- **Beklenen:** Okuma alanı boş ya da yeni görsel/dil için doğru metin ("… pixels selected").
+- **Gerçekleşen:** `129a8dd` ile pencere küçük resim yüklenmeden açılıyor; `#crop-readout` (aria-live) sıfırlanmadığı için yükleme bitene kadar önceki
+  değer ("1000×1200 piksel seçili", önceki dil ve önceki görselin ölçüsü) görünüyor ve ekran okuyucuya duyurulabiliyor. İlk Tur 2 koşusunda
+  çevrilmemiş metin avı bunu EN ekranda Türkçe metin olarak yakaladı; zamanlamaya bağlı, kısa süreli.
+- **Kanıt:** `sig-r2` koşusu: "EN arayüzde Türkçe metin: crop: 1000×1200 piksel seçili". **İlgili yer:** `src/renderer/app.js:1218-1235` `openCrop`
+  (`C.crop = null` yapılıyor ama `#crop-readout` temizlenmiyor; `placeBox` yalnızca yüklemeden sonra çağrılıyor).
+
+Güncel dağılım: açık hata 1 (Düşük: SIG-012); Tur 1'in 11 hatasının tamamı doğrulandı.
+
+---
+
+## Tur 1 — İlk test (2026-11-11)
+
 **Test edilen sürüm:** `main` @ `c26a61f` (0.1.0) · **Tarih:** 2026-11-11 · **Test Edici:** Test Edici (Claude)
 **Ortam:** Linux konteyner (root, 4 çekirdek, 15 GB), Node 22.23, Electron 33.4.11 (Chrome 130, Node 20.18),
 @playwright/test 1.63 (`_electron`), ffmpeg/ffprobe 6.1.1 (PATH), `xvfb-run -a`, deviceScaleFactor 1.

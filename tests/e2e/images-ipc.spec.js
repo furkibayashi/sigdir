@@ -187,10 +187,11 @@ test('imkânsız hedef: 12 MP → 394×472 @ 1 KB → too_small, dosya yazılmaz
     expect(free.error).toBe('too_small');
   }
   // Geçersiz hedefler
-  // Not: sözleşme Result[] der; geçersiz hedefte tek nesne {ok:false,error:'bad_target'} döner (bkz. TEST_REPORT).
+  // SIG-008: sözleşme Result[] — geçersiz hedefte de dizi döner
   const bad = await H.api(ctx.win, 'fitImages', { files: [fx.jpg], custom: { format: 'jpg', maxBytes: 0 } });
   H.writeEvidence('bad-target.json', bad);
-  expect(Array.isArray(bad) ? bad[0].error : bad.error).toBe('bad_target');
+  expect(Array.isArray(bad)).toBe(true);
+  expect(bad[0].error).toBe('bad_target');
   const unk = await H.api(ctx.win, 'fitImages', { files: [fx.jpg], profileId: 'yok-boyle-profil' });
   expect(unk.ok === false || (Array.isArray(unk) && unk[0].ok === false)).toBe(true);
 });
@@ -331,7 +332,9 @@ test('meşgul: süren iş varken ikinci fitImages/mergePdf/splitPdf/fitVideo →
     const firstRes = await first;
     return { second, merge, split, video, firstOk: firstRes.every((x) => x.ok) };
   }, fx.batch);
-  expect(r.second).toMatchObject({ ok: false, error: 'busy' });
+  // SIG-008 sonrası fitImages her zaman dizi döndürür
+  expect(Array.isArray(r.second)).toBe(true);
+  expect(r.second[0]).toMatchObject({ ok: false, error: 'busy' });
   expect(r.merge).toMatchObject({ ok: false, error: 'busy' });
   expect(r.split).toMatchObject({ ok: false, error: 'busy' });
   expect(r.video).toMatchObject({ ok: false, error: 'busy' });
@@ -366,7 +369,8 @@ test('toplu iptal: ilk dosya bitince cancel() → kalanlar "cancelled", yarım d
 test('fitImages: boş liste → no_files; rotate/crop kaynak pikselinde uygulanır', async () => {
   await freshOut();
   const empty = await H.api(ctx.win, 'fitImages', { files: [], profileId: 'osym-vesikalik' });
-  expect(empty).toMatchObject({ ok: false, error: 'no_files' });
+  expect(Array.isArray(empty)).toBe(true);
+  expect(empty[0]).toMatchObject({ ok: false, error: 'no_files' });
   // Sol kırmızı/sağ mavi 1200×800; rotate 90 → 800×1200, üst kırmızı. Üst yarıyı kırp → tamamen kırmızı.
   const [r] = await H.api(ctx.win, 'fitImages', {
     files: [{ path: fx.leftRight, rotate: 90, crop: { x: 0, y: 0, w: 800, h: 600 } }],

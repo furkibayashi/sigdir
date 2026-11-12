@@ -80,6 +80,7 @@ async function snapshotStates(ctx, lang) {
   await card(win, 'p-image', 'osym-vesikalik').click();
   await grab('image-osym');
   await win.locator('#panel-image .file-list li [data-fkey$="-crop"]').first().click();
+  await win.waitForTimeout(500); // küçük resim yüklensin (açılış anındaki eski metin ayrıca denetlenir)
   await grab('crop');
   await win.keyboard.press('Escape');
   await win.locator('#btn-settings').click();
@@ -130,6 +131,16 @@ test('dil TR ↔ EN: tüm görünür metinler değişiyor mu (çevrilmemiş meti
     await setLang('en');
     const en = await snapshotStates(ctx, 'en');
 
+    // Kırp penceresi açıldığı ANDA (küçük resim yüklenmeden) önceki oturumun metni görünüyor mu? (SIG-012)
+    await win.waitForTimeout(300);
+    const staleReadout = await win.evaluate(() => {
+      document.querySelector('#panel-image .file-list li [data-fkey$="-crop"]').click();
+      const v = document.querySelector('#crop-readout').textContent;
+      return v;
+    });
+    await win.keyboard.press('Escape');
+    H.writeEvidence('i18n-crop-readout-on-open.json', { staleReadout });
+    expect.soft(staleReadout, 'kırp penceresi açılırken önceki (TR) okuma metni gösteriliyor').not.toMatch(/piksel seçili/);
     const report = { bannerTR: trBanner, bannerEN: enBanner, rowErrorTR: trErr, rowErrorEN: enErr, sameInBoth: {}, turkishInEN: {}, rawKeys: {} };
     const keyLike = /^(\[[\w-]+\] )?[a-z]+(\.[a-zA-Z0-9_]+)+$/;
     for (const state of Object.keys(en)) {
