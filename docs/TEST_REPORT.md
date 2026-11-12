@@ -1,5 +1,31 @@
 # Sığdır — Test Raporu
 
+## Tur 3 — Son doğrulama (2026-11-12)
+
+**Test edilen sürüm:** `main` @ `c2ec6a2` (Electron 45.3.0).
+
+| | Test | Geçti | Kaldı |
+|---|---:|---:|---:|
+| Birim testleri (`npm test`) | 46 | 46 | 0 |
+| Uçtan uca, tam koşu 1 (`--workers=1`, 2,1 dk) | 47 | 47 | 0 |
+| Uçtan uca, tam koşu 2 (`--workers=2`, 1,2 dk) | 47 | 47 | 0 |
+
+Kararsız test yok. SIG-012 denetimi kesinleştirildi: kırp düğmesine basılıp okuma alanı **aynı senkron adımda** okunuyor (küçük resim yüklenmeden);
+eski ölçü/dil yerine yükleniyor metni bekleniyor.
+
+| ID | Önem | Durum | Kanıt |
+|---|---|---|---|
+| SIG-001 … SIG-011 | — | **Doğrulandı** (Tur 2) | Tur 3'te de iki tam koşuda ilgili testler geçti |
+| SIG-012 | Düşük | **Doğrulandı** | Açılış anında okuma alanı "Loading…" (EN), eski "1000×1200 piksel seçili" görünmüyor (`i18n-crop-readout-on-open.json`) |
+
+**Açık hata:** yok.
+
+**Yayına hazır mı?** **Evet — Linux'ta otomatik olarak doğrulanabilen her alan için yayına hazır.** Tüm 12 hata doğrulandı, iki tam koşu temiz.
+Koşul: yayından önce aşağıdaki "Windows'ta elle doğrulanması gerekenler" listesi gerçek bir Windows makinede geçmeli (portable `.exe`, sağ tık menüsü/HKCU,
+Gezgin'den sürükle-bırak, MAX_PATH/USB çıktı klasörü, gerçek iPhone HEIC/telefon videoları).
+
+---
+
 ## Tur 2 — Yeniden test (2026-11-12)
 
 **Test edilen sürüm:** `main` @ `129a8dd` (Electron 45.3.0 / Chrome 156 / Node 24) · düzeltme commit'leri `2f9acb8`, `f51bbef`, `5f8edf7`, `129a8dd`.
@@ -31,7 +57,7 @@ IPC yüzeyi testi Electron'un iç kanallarını aynı sürümle açılan **boş 
 | SIG-009 | Düşük | **Doğrulandı** | Keyfi `output` → `a-sigdir.pdf` (kaynağın yanı), hedef klasör hiç oluşturulmadı; çıktı klasörünün doğrudan içi kabul (`merge-output-path.json`) |
 | SIG-010 | Düşük | **Doğrulandı** | Video bitince yeşil "94,8 MB → 9,8 MB · Sınırın %98 kadarı", düğme "Hazır" (`ui-video-done-tr-dark.png`, gözle incelendi) |
 | SIG-011 | Düşük | **Doğrulandı** | 760×560'ta yüzde etiketi tek satır, eylem simgeleri durum çipinin altına diziliyor; EN boş ekranda kalkan simgesi metinle hizalı (`min-*-04-sonuc.png`, `min-dark-09-en-bos.png`) |
-| SIG-012 | Düşük | **Yeni** | Aşağıda |
+| SIG-012 | Düşük | Yeni → **Doğrulandı (Tur 3)** | Aşağıda |
 
 ### SIG-012 — Kırp penceresi açılırken okuma alanı kısa süre önceki oturumun metnini gösteriyor (yeni, `129a8dd` sonrası)
 - **Önem:** Düşük · **Sorumlu:** Tasarımcı-1
@@ -43,7 +69,7 @@ IPC yüzeyi testi Electron'un iç kanallarını aynı sürümle açılan **boş 
 - **Kanıt:** `sig-r2` koşusu: "EN arayüzde Türkçe metin: crop: 1000×1200 piksel seçili". **İlgili yer:** `src/renderer/app.js:1218-1235` `openCrop`
   (`C.crop = null` yapılıyor ama `#crop-readout` temizlenmiyor; `placeBox` yalnızca yüklemeden sonra çağrılıyor).
 
-Güncel dağılım: açık hata 1 (Düşük: SIG-012); Tur 1'in 11 hatasının tamamı doğrulandı.
+Tur 2 sonu dağılımı: açık hata 1 (Düşük: SIG-012, Tur 3'te doğrulandı); Tur 1'in 11 hatasının tamamı doğrulandı.
 
 ---
 

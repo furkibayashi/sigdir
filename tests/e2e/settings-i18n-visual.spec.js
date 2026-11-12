@@ -140,7 +140,8 @@ test('dil TR ↔ EN: tüm görünür metinler değişiyor mu (çevrilmemiş meti
     });
     await win.keyboard.press('Escape');
     H.writeEvidence('i18n-crop-readout-on-open.json', { staleReadout });
-    expect.soft(staleReadout, 'kırp penceresi açılırken önceki (TR) okuma metni gösteriliyor').not.toMatch(/piksel seçili/);
+    // SIG-012: açılış anında önceki oturumun ölçüsü/dili değil, yükleniyor metni görünmeli
+    expect(staleReadout, 'kırp penceresi açılırken önceki okuma metni gösteriliyor').not.toMatch(/\d+×\d+|piksel/);
     const report = { bannerTR: trBanner, bannerEN: enBanner, rowErrorTR: trErr, rowErrorEN: enErr, sameInBoth: {}, turkishInEN: {}, rawKeys: {} };
     const keyLike = /^(\[[\w-]+\] )?[a-z]+(\.[a-zA-Z0-9_]+)+$/;
     for (const state of Object.keys(en)) {
