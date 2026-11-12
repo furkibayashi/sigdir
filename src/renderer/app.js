@@ -1221,7 +1221,11 @@
     $('#crop-sub').textContent = C.aspect ? t('crop.sub', { ratio: tg.aspectLabel || ratioText(C.aspect), target: tg.label }) : t('crop.free');
     C.img = new Image();
     // Diyalog hemen açılır (Esc/odak beklenen gibi çalışsın); görüntü yüklenince çizilir.
+    // Okuma alanı önceki oturumun metnini göstermesin; gerçek değer hazır olana dek duyurulmasın.
     C.crop = null;
+    const ro = $('#crop-readout');
+    ro.setAttribute('aria-busy', 'true');
+    ro.textContent = t('crop.loading');
     box.style.width = '0px'; box.style.height = '0px';
     canvas.width = 0; canvas.height = 0;
     if (!dlgCrop.open) openDialog(dlgCrop, document.activeElement);
@@ -1230,6 +1234,7 @@
       if (C.item !== it || !dlgCrop.open) return;
       C.crop = it.crop && (it.rotate || 0) === C.rot ? Object.assign({}, it.crop) : defaultCrop();
       layoutCrop();
+      $('#crop-readout').removeAttribute('aria-busy');
     };
     C.img.src = it.info.thumb;
   }
@@ -1389,9 +1394,12 @@
     d._opener = opener && opener !== document.body ? opener : null;
     d.showModal();
   }
-  function restoreFocus(d) {
+  function restoreFocus(d, force) {
     let o = d._opener;
     if (!o || d.open) return;
+    // Zorlamasız denemeler (close olayı, sonraki kare) kullanıcının taşıdığı odağı asla çalmaz.
+    const a = document.activeElement;
+    if (!force && a && a !== document.body && a !== d && !d.contains(a)) return;
     // Liste yeniden çizildiyse aynı data-fkey'li yeni öğeyi bul
     if (!o.isConnected && o.dataset && o.dataset.fkey) o = document.querySelector('[data-fkey="' + CSS.escape(o.dataset.fkey) + '"]');
     if (o && o.isConnected && document.activeElement !== o) o.focus({ preventScroll: true });
@@ -1399,10 +1407,13 @@
   function closeDialog(d) {
     if (!d.open) return;
     d.close();
-    restoreFocus(d);
+    restoreFocus(d, true);
   }
   $$('dialog').forEach((d) => {
-    d.addEventListener('close', () => { restoreFocus(d); requestAnimationFrame(() => restoreFocus(d)); });
+    d.addEventListener('close', () => {
+      if (d === dlgCrop) { const ro = $('#crop-readout'); ro.textContent = ''; ro.removeAttribute('aria-busy'); }
+      restoreFocus(d); requestAnimationFrame(() => restoreFocus(d));
+    });
     // Arka plana tıklama kapatır — ama yalnızca basma da arka planda başladıysa
     // (kırpma kutusunu sürükleyip dışarıda bırakmak pencereyi kapatmasın).
     let downOutside = false;
