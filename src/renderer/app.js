@@ -1224,7 +1224,7 @@
     C.crop = null;
     box.style.width = '0px'; box.style.height = '0px';
     canvas.width = 0; canvas.height = 0;
-    if (!dlgCrop.open) dlgCrop.showModal();
+    if (!dlgCrop.open) openDialog(dlgCrop, document.activeElement);
     box.focus();
     C.img.onload = () => {
       if (C.item !== it || !dlgCrop.open) return;
@@ -1380,7 +1380,29 @@
   window.addEventListener('resize', () => { if (dlgCrop.open) layoutCrop(); });
 
   // ---------------------------------------------------------------- diyaloglar
+  /**
+   * Odak geri dönüşü deterministik: açan öğe açılışta saklanır; kapanışta hemen (eşzamanlı),
+   * 'close' olayında ve bir kare sonra yeniden denenir — tarayıcının kendi odak geri yüklemesi
+   * ya da olay sırası ne olursa olsun odak açan düğmede biter.
+   */
+  function openDialog(d, opener) {
+    d._opener = opener && opener !== document.body ? opener : null;
+    d.showModal();
+  }
+  function restoreFocus(d) {
+    let o = d._opener;
+    if (!o || d.open) return;
+    // Liste yeniden çizildiyse aynı data-fkey'li yeni öğeyi bul
+    if (!o.isConnected && o.dataset && o.dataset.fkey) o = document.querySelector('[data-fkey="' + CSS.escape(o.dataset.fkey) + '"]');
+    if (o && o.isConnected && document.activeElement !== o) o.focus({ preventScroll: true });
+  }
+  function closeDialog(d) {
+    if (!d.open) return;
+    d.close();
+    restoreFocus(d);
+  }
   $$('dialog').forEach((d) => {
+    d.addEventListener('close', () => { restoreFocus(d); requestAnimationFrame(() => restoreFocus(d)); });
     // Arka plana tıklama kapatır — ama yalnızca basma da arka planda başladıysa
     // (kırpma kutusunu sürükleyip dışarıda bırakmak pencereyi kapatmasın).
     let downOutside = false;
@@ -1390,10 +1412,10 @@
     };
     d.addEventListener('pointerdown', (e) => { downOutside = e.target === d && outside(e); });
     // Esc her zaman kapatsın (Chromium'un CloseWatcher kuralları art arda açılan diyaloglarda Esc'i yutabiliyor).
-    d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && d.open) { e.preventDefault(); e.stopPropagation(); d.close(); } });
+    d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && d.open) { e.preventDefault(); e.stopPropagation(); closeDialog(d); } });
     d.addEventListener('click', (e) => {
-      if (e.target === d && downOutside && outside(e)) d.close();
-      else if (e.target.closest('[data-close]')) d.close();
+      if (e.target === d && downOutside && outside(e)) closeDialog(d);
+      else if (e.target.closest('[data-close]')) closeDialog(d);
       downOutside = false;
     });
   });
@@ -1412,9 +1434,8 @@
     $('#set-ctx').checked = !!s.contextMenuInstalled;
     $('#about-version').textContent = t('settings.version', { v: S.info.version || '–' });
   }
-  function openSettings() { fillSettings(); dlgSet.showModal(); }
+  function openSettings() { fillSettings(); openDialog(dlgSet, $('#btn-settings')); }
   $('#btn-settings').addEventListener('click', openSettings);
-  dlgSet.addEventListener('close', () => $('#btn-settings').focus());
 
   dlgSet.addEventListener('change', async (e) => {
     const el = e.target;
